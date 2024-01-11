@@ -5,6 +5,15 @@ settings:
   excludeLinksFromLockfile: false
 
 devDependencies:
+  '@parcel/transformer-inline-string':
+    specifier: 2.11.0
+    version: 2.11.0(@parcel/core@2.11.0)
+  '@tsconfig/recommended':
+    specifier: ^1.0.3
+    version: 1.0.3
+  '@webgpu/types':
+    specifier: ^0.1.40
+    version: 0.1.40
   parcel:
     specifier: ^2.11.0
     version: 2.11.0(typescript@5.3.3)
@@ -700,6 +709,15 @@ packages:
       nullthrows: 1.1.1
     dev: true
 
+  /@parcel/transformer-inline-string@2.11.0(@parcel/core@2.11.0):
+    resolution: {integrity: sha512-yLLjVqS7/P/ySOOjwdl2mElNHmCtJK81+7mnoA2oLEsf4kTKlW3JnIvX5BqJj6Dy6Ek0V1M48E86T9U3fwzWzg==}
+    engines: {node: '>= 12.0.0', parcel: ^2.11.0}
+    dependencies:
+      '@parcel/plugin': 2.11.0(@parcel/core@2.11.0)
+    transitivePeerDependencies:
+      - '@parcel/core'
+    dev: true
+
   /@parcel/transformer-js@2.11.0(@parcel/core@2.11.0):
     resolution: {integrity: sha512-G1sv0n8/fJqHqwUs0iVnVdmRY0Kh8kWaDkuWcU/GJBHMGhUnLXKdNwxX2Av9UdBL14bU1nTINfr9qOfnQotXWg==}
     engines: {node: '>= 12.0.0', parcel: ^2.11.0}
@@ -1103,6 +1121,14 @@ packages:
   /@trysound/sax@0.2.0:
     resolution: {integrity: sha512-L7z9BgrNEcYyUYtF+HaEfiS5ebkh9jXqbszz7pC0hRBPaatV0XjSD3+eHrpqFemQfgwiFF0QPIarnIihIDn7OA==}
     engines: {node: '>=10.13.0'}
+    dev: true
+
+  /@tsconfig/recommended@1.0.3:
+    resolution: {integrity: sha512-+jby/Guq9H8O7NWgCv6X8VAiQE8Dr/nccsCtL74xyHKhu2Knu5EAKmOZj3nLCnLm1KooUzKY+5DsnGVqhM8/wQ==}
+    dev: true
+
+  /@webgpu/types@0.1.40:
+    resolution: {integrity: sha512-/BBkHLS6/eQjyWhY2H7Dx5DHcVrS2ICj9owvSRdgtQT6KcafLZA86tPze0xAOsd4FbsYKCUBUQyNi87q7gV7kw==}
     dev: true
 
   /abortcontroller-polyfill@1.7.5:
