@@ -2,7 +2,6 @@ import shader from "bundle-text:./shader.wgsl";
 import { makeDartboard } from "./dartboard";
 
 const width = 500;
-const height = 500;
 
 async function init() {
   const adapter = await navigator.gpu?.requestAdapter();
@@ -26,7 +25,7 @@ async function init() {
     },
   });
 
-  const input = new Float32Array(width * height);
+  const input = new Float32Array(width * width);
 
   // create a buffer on the GPU to hold our computation
   // input and output
@@ -45,14 +44,20 @@ async function init() {
     usage: GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST,
   });
 
-  const uniformData = new Uint32Array([width, height]); // Replace x and y with your values
+  const uniformData = new Uint32Array([width, width]); // Replace x and y with your values
   const uniformBuffer = device.createBuffer({
     size: uniformData.byteLength,
     usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
   });
   device.queue.writeBuffer(uniformBuffer, 0, uniformData);
 
-  // const dartboardScore = new Uint32Array()
+  const dartboardScore = makeDartboard(width);
+  const dartboardBuffer = device.createBuffer({
+    label: "dartboard buffer",
+    size: dartboardScore.byteLength,
+    usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
+  });
+  device.queue.writeBuffer(dartboardBuffer, 0, dartboardScore);
 
   // Setup a bindGroup to tell the shader which
   // buffer to use for the computation
@@ -62,6 +67,7 @@ async function init() {
     entries: [
       { binding: 0, resource: { buffer: workBuffer } },
       { binding: 1, resource: { buffer: uniformBuffer } },
+      { binding: 2, resource: { buffer: dartboardBuffer } },
     ],
   });
 
@@ -74,7 +80,7 @@ async function init() {
   });
   pass.setPipeline(pipeline);
   pass.setBindGroup(0, bindGroup);
-  pass.dispatchWorkgroups(width, height);
+  pass.dispatchWorkgroups(width, width);
   pass.end();
 
   // Encode a command to copy the results to a mappable buffer.
@@ -93,15 +99,14 @@ async function init() {
   if (!(canvas instanceof HTMLCanvasElement)) {
     return;
   }
-  canvas.height = height;
+  canvas.height = width;
   canvas.width = width;
   const ctx = canvas.getContext("2d");
   if (!ctx) {
     return;
   }
 
-  // Assuming 'data' is your Float32Array with 800*600 numbers
-  const imageData = ctx.createImageData(width, height);
+  const imageData = ctx.createImageData(width, width);
 
   const max = result.reduce((a, b) => Math.max(a, b), 0);
 

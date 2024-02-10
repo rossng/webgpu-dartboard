@@ -5,9 +5,9 @@
 @compute @workgroup_size(1) fn computeSomething(
   @builtin(global_invocation_id) id: vec3<u32>,
 ) {
-  // let x = f32(id.x) / f32(dims.x);
-  // let y = f32(id.y) / f32(dims.y);
-  data[id.y * dims.x + id.x] = gaussian2D(f32(id.x), f32(id.y), f32(dims.x) / 2.0, f32(dims.y) / 2.0, 100, 100);
+  let gaussian = gaussian2D(f32(id.x), f32(id.y), f32(dims.x) / 2.0, f32(dims.y) / 2.0, 100, 100);
+  let score = f32(dartboard[id.y * dims.x + id.x]);
+  data[id.y * dims.x + id.x] = gaussian * score;
 }
 
 fn gaussian2D(x: f32, y: f32, mu_x: f32, mu_y: f32, sigma_x: f32, sigma_y: f32) -> f32 {
