@@ -1,13 +1,14 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { CanvasVisualization } from './CanvasVisualization';
 import { getDevice, width } from '../webgpu/util';
 import { makeDartboard } from '../webgpu/dartboard';
-import weightedGrid from 'bundle-text:../weighted-grid.wgsl';
+import expected from 'bundle-text:../expected.wgsl';
 
-export const WeightedGrid: React.FC = () => {
+export const OptimalAiming: React.FC = () => {
   const [isReady, setIsReady] = useState(false);
+  const renderBufferRef = useRef<GPUBuffer | null>(null);
 
-  const runWeightedGrid = async (canvas: HTMLCanvasElement) => {
+  const computeExpected = async (canvas: HTMLCanvasElement) => {
     const device = await getDevice();
     if (!device) {
       console.error("Cannot continue without a device");
@@ -15,12 +16,12 @@ export const WeightedGrid: React.FC = () => {
     }
 
     const module = device.createShaderModule({
-      label: "weighted grid module",
-      code: weightedGrid,
+      label: "expected score module",
+      code: expected,
     });
 
     const pipeline = device.createComputePipeline({
-      label: "weighted grid pipeline",
+      label: "expected score pipeline",
       layout: "auto",
       compute: {
         module,
@@ -76,7 +77,7 @@ export const WeightedGrid: React.FC = () => {
     });
     pass.setPipeline(pipeline);
     pass.setBindGroup(0, bindGroup);
-    pass.dispatchWorkgroups(width, width);
+    pass.dispatchWorkgroups(100);
     pass.end();
 
     encoder.copyBufferToBuffer(workBuffer, 0, resultBuffer, 0, resultBuffer.size);
@@ -84,8 +85,15 @@ export const WeightedGrid: React.FC = () => {
     const commandBuffer = encoder.finish();
     device.queue.submit([commandBuffer]);
 
+    const start = Date.now();
+    console.log("start compute expected score");
     await resultBuffer.mapAsync(GPUMapMode.READ);
     const result = new Float32Array(resultBuffer.getMappedRange().slice(0));
+    console.log("finish compute expected score", (Date.now() - start) / 1000);
+
+    // Store the buffer for the render buffer tab
+    renderBufferRef.current = workBuffer;
+
     resultBuffer.unmap();
 
     const ctx = canvas.getContext("2d");
@@ -111,14 +119,14 @@ export const WeightedGrid: React.FC = () => {
 
   return (
     <div>
-      <h2>Weighted Grid</h2>
-      <p>This visualization shows the product of the Gaussian probability distribution and the dartboard scores at each position. Brighter areas indicate higher expected value contributions.</p>
+      <h2>Optimal Aiming</h2>
+      <p>The expected score when aiming at each position on the dartboard, calculated by summing probability-weighted scores across all possible hit locations. Brighter areas indicate higher expected scores, showing optimal aiming points.</p>
       {isReady && (
         <CanvasVisualization
-          id="weighted-grid"
+          id="expected-score"
           width={width}
           height={width}
-          onCanvasReady={runWeightedGrid}
+          onCanvasReady={computeExpected}
         />
       )}
     </div>
