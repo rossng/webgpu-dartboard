@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { CanvasVisualization } from './CanvasVisualization';
+import { TargetIndicator } from './TargetIndicator';
 import { getDevice, width } from '../webgpu/util';
 import { makeDartboard } from '../webgpu/dartboard';
 import { getDartboardColor } from '../webgpu/dartboard-colors';
@@ -7,11 +8,18 @@ import weightedGrid from 'bundle-text:../weighted-grid.wgsl';
 
 interface ScoreDistributionProps {
   showDartboardColors?: boolean;
+  targetPosition?: { x: number; y: number };
+  onTargetPositionChange?: (position: { x: number; y: number }) => void;
 }
 
-export const ScoreDistribution: React.FC<ScoreDistributionProps> = ({ showDartboardColors }) => {
+export const ScoreDistribution: React.FC<ScoreDistributionProps> = ({ 
+  showDartboardColors, 
+  targetPosition = { x: 0, y: 0 },
+  onTargetPositionChange
+}) => {
   const [isReady, setIsReady] = useState(false);
   const [canvasKey, setCanvasKey] = useState(0);
+  const [isDragging, setIsDragging] = useState(false);
 
   const runScoreDistribution = useCallback(async (canvas: HTMLCanvasElement) => {
     const device = await getDevice();
@@ -65,6 +73,14 @@ export const ScoreDistribution: React.FC<ScoreDistributionProps> = ({ showDartbo
     });
     device.queue.writeBuffer(dartboardBuffer, 0, dartboardScore);
 
+    // Target position buffer (ensure minimum 16 bytes for WebGPU uniform buffer alignment)
+    const targetData = new Float32Array([targetPosition.x, targetPosition.y, 0, 0]);
+    const targetBuffer = device.createBuffer({
+      size: Math.max(targetData.byteLength, 16),
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+    });
+    device.queue.writeBuffer(targetBuffer, 0, targetData);
+
     const bindGroup = device.createBindGroup({
       label: "bindGroup for work buffer",
       layout: pipeline.getBindGroupLayout(0),
@@ -72,6 +88,7 @@ export const ScoreDistribution: React.FC<ScoreDistributionProps> = ({ showDartbo
         { binding: 0, resource: { buffer: workBuffer } },
         { binding: 1, resource: { buffer: uniformBuffer } },
         { binding: 2, resource: { buffer: dartboardBuffer } },
+        { binding: 3, resource: { buffer: targetBuffer } },
       ],
     });
 
@@ -134,16 +151,18 @@ export const ScoreDistribution: React.FC<ScoreDistributionProps> = ({ showDartbo
     }
 
     ctx.putImageData(imageData, 0, 0);
-  }, [showDartboardColors]);
+  }, [showDartboardColors, targetPosition]);
 
   useEffect(() => {
     setIsReady(true);
   }, []);
 
   useEffect(() => {
-    // Force re-render of canvas when toggle changes
-    setCanvasKey(prev => prev + 1);
-  }, [showDartboardColors]);
+    // Force re-render of canvas when toggle or target changes, but not during dragging
+    if (!isDragging) {
+      setCanvasKey(prev => prev + 1);
+    }
+  }, [showDartboardColors, targetPosition, isDragging]);
 
   return (
     <div>
@@ -151,13 +170,25 @@ export const ScoreDistribution: React.FC<ScoreDistributionProps> = ({ showDartbo
       <p>Shows the score-weighted probability distribution (probability × score at each position). Brighter areas contribute more to the expected score.</p>
       
       {isReady && (
-        <CanvasVisualization
-          key={canvasKey}
-          id="score-distribution"
-          width={width}
-          height={width}
-          onCanvasReady={runScoreDistribution}
-        />
+        <div style={{ position: 'relative', display: 'inline-block' }}>
+          <CanvasVisualization
+            key={canvasKey}
+            id="score-distribution"
+            width={width}
+            height={width}
+            onCanvasReady={runScoreDistribution}
+          />
+          {onTargetPositionChange && (
+            <TargetIndicator
+              targetPosition={targetPosition}
+              onTargetPositionChange={onTargetPositionChange}
+              onDragStart={() => setIsDragging(true)}
+              onDragEnd={() => setIsDragging(false)}
+              canvasWidth={width}
+              canvasHeight={width}
+            />
+          )}
+        </div>
       )}
     </div>
   );

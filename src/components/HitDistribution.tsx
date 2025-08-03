@@ -1,16 +1,24 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { CanvasVisualization } from './CanvasVisualization';
+import { TargetIndicator } from './TargetIndicator';
 import { getDevice, width } from '../webgpu/util';
 import { getDartboardColor } from '../webgpu/dartboard-colors';
 import hitDistribution from 'bundle-text:../hit-distribution.wgsl';
 
 interface HitDistributionProps {
   showDartboardColors?: boolean;
+  targetPosition?: { x: number; y: number };
+  onTargetPositionChange?: (position: { x: number; y: number }) => void;
 }
 
-export const HitDistribution: React.FC<HitDistributionProps> = ({ showDartboardColors }) => {
+export const HitDistribution: React.FC<HitDistributionProps> = ({ 
+  showDartboardColors, 
+  targetPosition = { x: 0, y: 0 },
+  onTargetPositionChange
+}) => {
   const [isReady, setIsReady] = useState(false);
   const [canvasKey, setCanvasKey] = useState(0);
+  const [isDragging, setIsDragging] = useState(false);
 
   const runHitDistribution = useCallback(async (canvas: HTMLCanvasElement) => {
     const device = await getDevice();
@@ -48,7 +56,7 @@ export const HitDistribution: React.FC<HitDistributionProps> = ({ showDartboardC
       usage: GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST,
     });
 
-    const uniformData = new Uint32Array([width, width]);
+    const uniformData = new Float32Array([width, width, targetPosition.x, targetPosition.y]);
     const uniformBuffer = device.createBuffer({
       size: uniformData.byteLength,
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
@@ -123,30 +131,44 @@ export const HitDistribution: React.FC<HitDistributionProps> = ({ showDartboardC
     }
 
     ctx.putImageData(imageData, 0, 0);
-  }, [showDartboardColors]);
+  }, [showDartboardColors, targetPosition]);
 
   useEffect(() => {
     setIsReady(true);
   }, []);
 
   useEffect(() => {
-    // Force re-render of canvas when toggle changes
-    setCanvasKey(prev => prev + 1);
-  }, [showDartboardColors]);
+    // Force re-render of canvas when toggle or target changes, but not during dragging
+    if (!isDragging) {
+      setCanvasKey(prev => prev + 1);
+    }
+  }, [showDartboardColors, targetPosition, isDragging]);
 
   return (
     <div>
       <h2>Hit Distribution</h2>
-      <p>Shows the probability distribution of where darts will land when aiming at the center, based on a 2D Gaussian distribution.</p>
+      <p>Shows the probability distribution of where darts will land when aiming at the target location, based on a 2D Gaussian distribution.</p>
       
       {isReady && (
-        <CanvasVisualization
-          key={canvasKey}
-          id="hit-distribution"
-          width={width}
-          height={width}
-          onCanvasReady={runHitDistribution}
-        />
+        <div style={{ position: 'relative', display: 'inline-block' }}>
+          <CanvasVisualization
+            key={canvasKey}
+            id="hit-distribution"
+            width={width}
+            height={width}
+            onCanvasReady={runHitDistribution}
+          />
+          {onTargetPositionChange && (
+            <TargetIndicator
+              targetPosition={targetPosition}
+              onTargetPositionChange={onTargetPositionChange}
+              onDragStart={() => setIsDragging(true)}
+              onDragEnd={() => setIsDragging(false)}
+              canvasWidth={width}
+              canvasHeight={width}
+            />
+          )}
+        </div>
       )}
     </div>
   );

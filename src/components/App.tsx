@@ -15,7 +15,11 @@ type TabName =
 interface Tab {
   id: TabName;
   label: string;
-  component: React.FC<{ showDartboardColors?: boolean }>;
+  component: React.FC<{ 
+    showDartboardColors?: boolean;
+    targetPosition?: { x: number; y: number };
+    onTargetPositionChange?: (position: { x: number; y: number }) => void;
+  }>;
 }
 
 const tabs: Tab[] = [
@@ -29,6 +33,7 @@ const tabs: Tab[] = [
 export const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<TabName>("hit-distribution");
   const [showDartboardColors, setShowDartboardColors] = useState(false);
+  const [targetPosition, setTargetPosition] = useState({ x: 0, y: 0 }); // Normalized coordinates (-1 to 1)
 
   const ActiveComponent = tabs.find((tab) => tab.id === activeTab)?.component || HitDistribution;
 
@@ -62,7 +67,11 @@ export const App: React.FC = () => {
         </div>
 
         <div style={{ border: "1px solid #ddd", padding: "20px", borderRadius: "4px" }}>
-          <ActiveComponent showDartboardColors={showDartboardColors} />
+          <ActiveComponent 
+            showDartboardColors={showDartboardColors} 
+            targetPosition={targetPosition}
+            onTargetPositionChange={setTargetPosition}
+          />
         </div>
       </div>
 
@@ -88,6 +97,17 @@ export const App: React.FC = () => {
           </label>
           <p style={{ fontSize: "14px", color: "#666", marginTop: "8px" }}>
             Display visualizations with traditional dartboard colors (green and cream segments).
+          </p>
+        </div>
+
+        <div style={{ marginTop: "30px" }}>
+          <h3>Target Position</h3>
+          <div style={{ fontSize: "14px", color: "#666" }}>
+            <p>X: {targetPosition.x.toFixed(3)}</p>
+            <p>Y: {targetPosition.y.toFixed(3)}</p>
+          </div>
+          <p style={{ fontSize: "12px", color: "#888", marginTop: "8px" }}>
+            Drag the crosshair on the visualization to change the aim point.
           </p>
         </div>
       </div>
