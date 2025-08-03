@@ -1,16 +1,16 @@
-import weightedGrid from "bundle-text:./weighted-grid.wgsl";
+import expected from "bundle-text:./expected.wgsl";
 import { makeDartboard } from "./dartboard";
-import { computeExpected } from "./expected";
-import { getDevice, width } from "./util";
+import { renderBuffer } from "./render";
+import { width } from "./util";
 
-async function init(device: GPUDevice) {
+export async function computeExpected(device: GPUDevice) {
   const module = device.createShaderModule({
-    label: "weighted grid module",
-    code: weightedGrid,
+    label: "expected score module",
+    code: expected,
   });
 
   const pipeline = device.createComputePipeline({
-    label: "weighted grid pipeline",
+    label: "expected score pipeline",
     layout: "auto",
     compute: {
       module,
@@ -73,7 +73,7 @@ async function init(device: GPUDevice) {
   });
   pass.setPipeline(pipeline);
   pass.setBindGroup(0, bindGroup);
-  pass.dispatchWorkgroups(width, width);
+  pass.dispatchWorkgroups(100);
   pass.end();
 
   // Encode a command to copy the results to a mappable buffer.
@@ -84,11 +84,17 @@ async function init(device: GPUDevice) {
   device.queue.submit([commandBuffer]);
 
   // Read the results
+  const start = Date.now();
+  console.log("start compute expected score");
   await resultBuffer.mapAsync(GPUMapMode.READ);
   const result = new Float32Array(resultBuffer.getMappedRange().slice(0));
+  console.log("finish compute expected score", (Date.now() - start) / 1000);
+
+  await renderBuffer(device, workBuffer);
+
   resultBuffer.unmap();
 
-  const canvas = document.getElementById("weighted-grid");
+  const canvas = document.getElementById("expected-score");
   if (!(canvas instanceof HTMLCanvasElement)) {
     return;
   }
@@ -119,43 +125,3 @@ async function init(device: GPUDevice) {
   // Draw the imageData onto the canvas
   ctx.putImageData(imageData, 0, 0);
 }
-
-async function initDartboard() {
-  const width = 500;
-  const dartboard = makeDartboard(width);
-  const canvas = document.getElementById("dartboard");
-  if (!(canvas instanceof HTMLCanvasElement)) {
-    return;
-  }
-  canvas.height = width;
-  canvas.width = width;
-  const ctx = canvas.getContext("2d");
-  if (!ctx) {
-    return;
-  }
-  const imageData = ctx.createImageData(width, width);
-  for (let i = 0; i < dartboard.length; i++) {
-    const intensity = (dartboard[i] * 255) / 50;
-    imageData.data[i * 4 + 0] = intensity; // R
-    imageData.data[i * 4 + 1] = intensity; // G
-    imageData.data[i * 4 + 2] = intensity; // B
-    imageData.data[i * 4 + 3] = 255; // A, fully opaque
-  }
-
-  ctx.putImageData(imageData, 0, 0);
-}
-
-async function runAll() {
-  const device = await getDevice();
-
-  if (!device) {
-    console.error("Cannot continue without a device");
-    return;
-  }
-
-  initDartboard();
-  init(device);
-  computeExpected(device);
-}
-
-runAll();
