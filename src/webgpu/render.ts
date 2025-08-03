@@ -1,12 +1,6 @@
-import shader from "bundle-text:./render.wgsl";
+import shader from "bundle-text:../render.wgsl";
 
-export async function renderBuffer(device: GPUDevice, buffer: GPUBuffer) {
-  const canvas = document.getElementById("render-buffer");
-
-  if (!canvas || !(canvas instanceof HTMLCanvasElement)) {
-    console.error("Could not get canvas");
-    return;
-  }
+export async function renderBuffer(device: GPUDevice, buffer: GPUBuffer, canvas: HTMLCanvasElement) {
 
   const context = canvas.getContext("webgpu") as GPUCanvasContext;
   const presentationFormat = navigator.gpu.getPreferredCanvasFormat();

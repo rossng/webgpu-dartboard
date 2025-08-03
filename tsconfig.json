@@ -1,6 +1,10 @@
 {
   "extends": "@tsconfig/recommended/tsconfig.json",
   "compilerOptions": {
-    "types": ["@webgpu/types"]
+    "types": ["@webgpu/types"],
+    "lib": ["dom", "esnext"],
+    "jsx": "react-jsx",
+    "moduleResolution": "node",
+    "esModuleInterop": true
   }
 }

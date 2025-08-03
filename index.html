@@ -3,20 +3,9 @@
   <head>
     <meta charset="utf-8" />
     <title>WebGPU Dartboard</title>
-    <script type="module" src="src/main.ts"></script>
+    <script type="module" src="src/main.tsx"></script>
   </head>
   <body>
-    <canvas id="weighted-grid" width="500" height="500" style="image-rendering: pixelated"></canvas>
-    <br />
-    <canvas id="dartboard" width="500" height="500" style="image-rendering: pixelated"></canvas>
-    <br />
-    <canvas
-      id="expected-score"
-      width="500"
-      height="500"
-      style="image-rendering: pixelated"
-    ></canvas>
-    <br />
-    <canvas id="render-buffer" width="500" height="500" style="image-rendering: pixelated"></canvas>
+    <div id="root"></div>
   </body>
 </html>
