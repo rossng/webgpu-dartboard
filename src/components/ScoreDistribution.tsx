@@ -5,6 +5,7 @@ import { getDevice, width } from '../webgpu/util';
 import { makeDartboard } from '../webgpu/dartboard';
 import { getDartboardColor } from '../webgpu/dartboard-colors';
 import { drawRadialScores } from '../webgpu/dartboard-labels';
+import { getViridisColor } from '../webgpu/viridis';
 import weightedGrid from 'bundle-text:../weighted-grid.wgsl';
 import segmentProbabilitiesShader from 'bundle-text:../segment-probabilities.wgsl';
 
@@ -314,12 +315,14 @@ export const ScoreDistribution: React.FC<ScoreDistributionProps> = ({
         imageData.data[i * 4 + 3] = 255;
       }
     } else {
-      // Grayscale rendering
+      // Viridis color map rendering
       for (let i = 0; i < result.length; i++) {
-        const intensity = max > 0 ? Math.floor(result[i] * (1 / max) * 255) : 0;
-        imageData.data[i * 4 + 0] = intensity;
-        imageData.data[i * 4 + 1] = intensity;
-        imageData.data[i * 4 + 2] = intensity;
+        const intensity = max > 0 ? result[i] / max : 0;
+        const color = getViridisColor(intensity);
+        
+        imageData.data[i * 4 + 0] = color.r;
+        imageData.data[i * 4 + 1] = color.g;
+        imageData.data[i * 4 + 2] = color.b;
         imageData.data[i * 4 + 3] = 255;
       }
     }
