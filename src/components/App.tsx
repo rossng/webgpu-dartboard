@@ -2,7 +2,6 @@ import React, { useState } from "react";
 import { Dartboard } from "./Dartboard";
 import { HitDistribution } from "./HitDistribution";
 import { OptimalAiming } from "./OptimalAiming";
-import { RenderBuffer } from "./RenderBuffer";
 import { ScoreAreas } from "./ScoreAreas";
 import { ScoreDistribution } from "./ScoreDistribution";
 
@@ -11,8 +10,7 @@ type TabName =
   | "score-distribution"
   | "dartboard"
   | "score-areas"
-  | "optimal-aiming"
-  | "render-buffer";
+  | "optimal-aiming";
 
 interface Tab {
   id: TabName;
@@ -31,7 +29,6 @@ const tabs: Tab[] = [
   { id: "hit-distribution", label: "Hit Distribution", component: HitDistribution },
   { id: "score-distribution", label: "Score Distribution", component: ScoreDistribution },
   { id: "optimal-aiming", label: "Optimal Aiming", component: OptimalAiming },
-  { id: "render-buffer", label: "Render Buffer", component: RenderBuffer },
 ];
 
 export const App: React.FC = () => {
