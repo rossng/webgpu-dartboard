@@ -10,6 +10,7 @@ interface HitDistributionProps {
   showDartboardColors?: boolean;
   targetPosition?: { x: number; y: number };
   onTargetPositionChange?: (position: { x: number; y: number }) => void;
+  gaussianStddev?: number;
 }
 
 interface SegmentProbability {
@@ -21,7 +22,8 @@ interface SegmentProbability {
 export const HitDistribution: React.FC<HitDistributionProps> = ({ 
   showDartboardColors, 
   targetPosition = { x: 0, y: 0 },
-  onTargetPositionChange
+  onTargetPositionChange,
+  gaussianStddev = 100
 }) => {
   const [isReady, setIsReady] = useState(false);
   const [canvasKey, setCanvasKey] = useState(0);
@@ -85,6 +87,13 @@ export const HitDistribution: React.FC<HitDistributionProps> = ({
     });
     device.queue.writeBuffer(uniformBuffer, 0, uniformData);
 
+    const sigmaData = new Float32Array([gaussianStddev, gaussianStddev]);
+    const sigmaBuffer = device.createBuffer({
+      size: Math.max(sigmaData.byteLength, 16), // Ensure minimum 16 bytes for WebGPU
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+    });
+    device.queue.writeBuffer(sigmaBuffer, 0, sigmaData);
+
     const bindGroup = device.createBindGroup({
       label: "bindGroup for work buffer",
       layout: pipeline.getBindGroupLayout(0),
@@ -92,6 +101,7 @@ export const HitDistribution: React.FC<HitDistributionProps> = ({
         { binding: 0, resource: { buffer: workBuffer } },
         { binding: 1, resource: { buffer: uniformBuffer } },
         { binding: 2, resource: { buffer: segmentBuffer } },
+        { binding: 3, resource: { buffer: sigmaBuffer } },
       ],
     });
 
@@ -244,18 +254,18 @@ export const HitDistribution: React.FC<HitDistributionProps> = ({
     const centerY = width / 2;
     const labelRadius = width * 0.45; // Place labels outside the dartboard
     drawRadialScores(ctx, centerX, centerY, labelRadius, 14, '#fff');
-  }, [showDartboardColors, targetPosition]);
+  }, [showDartboardColors, targetPosition, gaussianStddev]);
 
   useEffect(() => {
     setIsReady(true);
   }, []);
 
   useEffect(() => {
-    // Force re-render of canvas when toggle or target changes, but not during dragging
+    // Force re-render of canvas when toggle, target, or stddev changes, but not during dragging
     if (!isDragging) {
       setCanvasKey(prev => prev + 1);
     }
-  }, [showDartboardColors, targetPosition, isDragging]);
+  }, [showDartboardColors, targetPosition, gaussianStddev, isDragging]);
 
   return (
     <div>

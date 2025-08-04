@@ -1,7 +1,7 @@
 @group(0) @binding(0) var<storage, read_write> data: array<f32>;
 @group(0) @binding(1) var<uniform> params: vec4u; // x: width, y: height, z: showScoreWeighted, w: showDartboardColors
 @group(0) @binding(2) var<storage, read> dartboard: array<u32>;
-@group(0) @binding(3) var<uniform> targetPos: vec2f; // x: targetX, y: targetY (normalized coords)
+@group(0) @binding(3) var<uniform> targetPos: vec4f; // x: targetX, y: targetY, z: sigmaX, w: sigmaY
 
 @compute @workgroup_size(1) fn computeSomething(
   @builtin(global_invocation_id) id: vec3<u32>,
@@ -10,7 +10,7 @@
   let targetPixelX = (targetPos.x + 1.0) * f32(params.x) * 0.5;
   let targetPixelY = (targetPos.y + 1.0) * f32(params.y) * 0.5;
   
-  let gaussian = gaussian2D(f32(id.x), f32(id.y), targetPixelX, targetPixelY, 100, 100);
+  let gaussian = gaussian2D(f32(id.x), f32(id.y), targetPixelX, targetPixelY, targetPos.z, targetPos.w);
   let score = f32(dartboard[id.y * params.x + id.x]);
   
   // Always compute score-weighted probability for ScoreDistribution

@@ -11,12 +11,14 @@ interface ScoreDistributionProps {
   showDartboardColors?: boolean;
   targetPosition?: { x: number; y: number };
   onTargetPositionChange?: (position: { x: number; y: number }) => void;
+  gaussianStddev?: number;
 }
 
 export const ScoreDistribution: React.FC<ScoreDistributionProps> = ({ 
   showDartboardColors, 
   targetPosition = { x: 0, y: 0 },
-  onTargetPositionChange
+  onTargetPositionChange,
+  gaussianStddev = 100
 }) => {
   const [isReady, setIsReady] = useState(false);
   const [canvasKey, setCanvasKey] = useState(0);
@@ -74,8 +76,8 @@ export const ScoreDistribution: React.FC<ScoreDistributionProps> = ({
     });
     device.queue.writeBuffer(dartboardBuffer, 0, dartboardScore);
 
-    // Target position buffer (ensure minimum 16 bytes for WebGPU uniform buffer alignment)
-    const targetData = new Float32Array([targetPosition.x, targetPosition.y, 0, 0]);
+    // Target position and stddev buffer (ensure minimum 16 bytes for WebGPU uniform buffer alignment)
+    const targetData = new Float32Array([targetPosition.x, targetPosition.y, gaussianStddev, gaussianStddev]);
     const targetBuffer = device.createBuffer({
       size: Math.max(targetData.byteLength, 16),
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
@@ -158,18 +160,18 @@ export const ScoreDistribution: React.FC<ScoreDistributionProps> = ({
     const centerY = width / 2;
     const labelRadius = width * 0.45; // Place labels outside the dartboard
     drawRadialScores(ctx, centerX, centerY, labelRadius, 14, '#fff');
-  }, [showDartboardColors, targetPosition]);
+  }, [showDartboardColors, targetPosition, gaussianStddev]);
 
   useEffect(() => {
     setIsReady(true);
   }, []);
 
   useEffect(() => {
-    // Force re-render of canvas when toggle or target changes, but not during dragging
+    // Force re-render of canvas when toggle, target, or stddev changes, but not during dragging
     if (!isDragging) {
       setCanvasKey(prev => prev + 1);
     }
-  }, [showDartboardColors, targetPosition, isDragging]);
+  }, [showDartboardColors, targetPosition, gaussianStddev, isDragging]);
 
   return (
     <div>

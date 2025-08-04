@@ -1,14 +1,18 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { CanvasVisualization } from './CanvasVisualization';
 import { getDevice, width } from '../webgpu/util';
 import { makeDartboard } from '../webgpu/dartboard';
 import expected from 'bundle-text:../expected.wgsl';
 
-export const OptimalAiming: React.FC = () => {
+interface OptimalAimingProps {
+  gaussianStddev?: number;
+}
+
+export const OptimalAiming: React.FC<OptimalAimingProps> = ({ gaussianStddev = 100 }) => {
   const [isReady, setIsReady] = useState(false);
   const renderBufferRef = useRef<GPUBuffer | null>(null);
 
-  const computeExpected = async (canvas: HTMLCanvasElement) => {
+  const computeExpected = useCallback(async (canvas: HTMLCanvasElement) => {
     const device = await getDevice();
     if (!device) {
       console.error("Cannot continue without a device");
@@ -44,7 +48,7 @@ export const OptimalAiming: React.FC = () => {
       usage: GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST,
     });
 
-    const uniformData = new Uint32Array([width, width]);
+    const uniformData = new Float32Array([width, width, gaussianStddev, gaussianStddev]);
     const uniformBuffer = device.createBuffer({
       size: uniformData.byteLength,
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
@@ -111,11 +115,18 @@ export const OptimalAiming: React.FC = () => {
     }
 
     ctx.putImageData(imageData, 0, 0);
-  };
+  }, [gaussianStddev]);
 
   useEffect(() => {
     setIsReady(true);
   }, []);
+
+  const [canvasKey, setCanvasKey] = useState(0);
+
+  useEffect(() => {
+    // Force re-render when stddev changes
+    setCanvasKey(prev => prev + 1);
+  }, [gaussianStddev]);
 
   return (
     <div>
@@ -123,6 +134,7 @@ export const OptimalAiming: React.FC = () => {
       <p>The expected score when aiming at each position on the dartboard, calculated by summing probability-weighted scores across all possible hit locations. Brighter areas indicate higher expected scores, showing optimal aiming points.</p>
       {isReady && (
         <CanvasVisualization
+          key={canvasKey}
           id="expected-score"
           width={width}
           height={width}

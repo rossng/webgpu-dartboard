@@ -1,5 +1,5 @@
 @group(0) @binding(0) var<storage, read_write> data: array<f32>;
-@group(0) @binding(1) var<uniform> dims: vec2u;
+@group(0) @binding(1) var<uniform> params: vec4f; // x: width, y: height, z: sigmaX, w: sigmaY
 @group(0) @binding(2) var<storage, read> dartboard: array<u32>;
 
 const WORKGROUP_SIZE: u32 = 64;
@@ -13,7 +13,7 @@ const WORKGROUP_SIZE: u32 = 64;
   let length = arrayLength(&data);
   let total_num_workgroups = num_workgroups.x * num_workgroups.y * num_workgroups.z;
   let count = length / (WORKGROUP_SIZE * total_num_workgroups);
-  let ignore = dims.x;
+  let ignore = u32(params.x);
 
   let workgroup_index =  
     workgroup_id.x +
@@ -38,7 +38,7 @@ const WORKGROUP_SIZE: u32 = 64;
 
     for (var j: u32 = 0; j < edge_length; j = j + 1) {
       for (var k: u32 = 0; k < edge_length; k = k + 1) {
-        let gaussian = gaussian2D(f32(k), f32(j), f32(x), f32(y), 40, 40);
+        let gaussian = gaussian2D(f32(k), f32(j), f32(x), f32(y), params.z, params.w);
         // let gaussian = gaussian2D(f32(x), f32(y), f32(j), f32(k), 100, 100);
         let score = f32(dartboard[j * edge_length + k]);
         total_probability = total_probability + gaussian;

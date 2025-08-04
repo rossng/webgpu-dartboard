@@ -21,6 +21,7 @@ interface Tab {
     showDartboardColors?: boolean;
     targetPosition?: { x: number; y: number };
     onTargetPositionChange?: (position: { x: number; y: number }) => void;
+    gaussianStddev?: number;
   }>;
 }
 
@@ -37,6 +38,16 @@ export const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<TabName>("dartboard");
   const [showDartboardColors, setShowDartboardColors] = useState(false);
   const [targetPosition, setTargetPosition] = useState({ x: 0, y: 0 }); // Normalized coordinates (-1 to 1)
+  const [gaussianStddev, setGaussianStddev] = useState(100); // Standard deviation in pixels
+  
+  // Convert pixels to millimeters: 
+  // - Canvas is 500px representing -1 to +1 normalized coords (2 units total)
+  // - So 250px = 1 normalized unit  
+  // - CENTER_TO_OUTER_DOUBLE (0.753881279 normalized) = 170mm real dartboard
+  // - So 1 normalized unit = 170mm / 0.753881279 = 225.5mm
+  // - Therefore 250px = 225.5mm, so 1px = 0.902mm
+  const pixelToMm = 170 / (0.753881279 * 250); // ≈ 0.902 mm/pixel
+  const gaussianStddevMm = gaussianStddev * pixelToMm;
 
   const ActiveComponent = tabs.find((tab) => tab.id === activeTab)?.component || HitDistribution;
 
@@ -74,6 +85,7 @@ export const App: React.FC = () => {
             showDartboardColors={showDartboardColors} 
             targetPosition={targetPosition}
             onTargetPositionChange={setTargetPosition}
+            gaussianStddev={gaussianStddev}
           />
         </div>
       </div>
@@ -100,6 +112,34 @@ export const App: React.FC = () => {
           </label>
           <p style={{ fontSize: "14px", color: "#666", marginTop: "8px" }}>
             Display visualizations with traditional dartboard colors (green and cream segments).
+          </p>
+        </div>
+
+        <div style={{ marginTop: "30px" }}>
+          <h3>Gaussian Distribution</h3>
+          <div style={{ marginBottom: "15px" }}>
+            <label style={{ display: "block", marginBottom: "8px", fontSize: "14px", fontWeight: "bold" }}>
+              Standard Deviation: {gaussianStddevMm.toFixed(1)} mm
+            </label>
+            <input
+              type="range"
+              min="25"
+              max="300"
+              step="5"
+              value={gaussianStddev}
+              onChange={(e) => setGaussianStddev(Number(e.target.value))}
+              style={{ width: "100%", marginBottom: "8px" }}
+            />
+            <div style={{ display: "flex", justifyContent: "space-between", fontSize: "12px", color: "#666" }}>
+              <span>Precise ({(25 * pixelToMm).toFixed(1)} mm)</span>
+              <span>Spread ({(300 * pixelToMm).toFixed(1)} mm)</span>
+            </div>
+          </div>
+          <div style={{ fontSize: "12px", color: "#666", marginBottom: "8px" }}>
+            Pixel value: {gaussianStddev} px
+          </div>
+          <p style={{ fontSize: "12px", color: "#888" }}>
+            Controls the spread of the Gaussian distribution. Lower values mean more precise throws, higher values mean more scattered throws. Based on regulation dartboard dimensions (170mm to outer double ring).
           </p>
         </div>
 

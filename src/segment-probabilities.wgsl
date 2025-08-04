@@ -1,6 +1,7 @@
 @group(0) @binding(0) var<storage, read_write> hitData: array<f32>;
 @group(0) @binding(1) var<uniform> params: vec4f; // x: width, y: height, z: targetX, w: targetY
 @group(0) @binding(2) var<storage, read_write> segmentSums: array<atomic<u32>>; // Array to store sums for each segment
+@group(0) @binding(3) var<uniform> sigmas: vec2f; // x: sigmaX, y: sigmaY
 
 // Dartboard configuration (normalized coordinates)
 const DOUBLE_BULL_DIAMETER: f32 = 0.056372549;
@@ -43,7 +44,7 @@ fn getRadialScore(index: i32) -> i32 {
   let targetPixelY = (params.w + 1.0) * params.y * 0.5;
   
   // Calculate gaussian hit probability at this pixel
-  let gaussian = gaussian2D(f32(id.x), f32(id.y), targetPixelX, targetPixelY, 100, 100);
+  let gaussian = gaussian2D(f32(id.x), f32(id.y), targetPixelX, targetPixelY, sigmas.x, sigmas.y);
   
   // Store the gaussian value in hitData for rendering
   hitData[id.y * u32(params.x) + id.x] = gaussian;
