@@ -1,33 +1,28 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { CanvasVisualization } from './CanvasVisualization';
 import { TargetIndicator } from './TargetIndicator';
+import { GaussianDistributionControls } from './GaussianDistributionControls';
+import { TargetPositionDisplay } from './TargetPositionDisplay';
 import { getDevice, width } from '../webgpu/util';
 import { getDartboardColor } from '../webgpu/dartboard-colors';
 import { drawRadialScores } from '../webgpu/dartboard-labels';
 import segmentProbabilitiesShader from 'bundle-text:../segment-probabilities.wgsl';
 
-interface HitDistributionProps {
-  showDartboardColors?: boolean;
-  targetPosition?: { x: number; y: number };
-  onTargetPositionChange?: (position: { x: number; y: number }) => void;
-  gaussianStddev?: number;
-}
+interface HitDistributionProps {}
 
 interface SegmentProbability {
   segment: string;
   probability: number;
 }
 
-export const HitDistribution: React.FC<HitDistributionProps> = ({ 
-  showDartboardColors, 
-  targetPosition = { x: 0, y: 0 },
-  onTargetPositionChange,
-  gaussianStddev = 100
-}) => {
+export const HitDistribution: React.FC<HitDistributionProps> = () => {
   const [isReady, setIsReady] = useState(false);
   const [canvasKey, setCanvasKey] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   const [segmentProbabilities, setSegmentProbabilities] = useState<SegmentProbability[]>([]);
+  const [showDartboardColors, setShowDartboardColors] = useState(true);
+  const [targetPosition, setTargetPosition] = useState({ x: 0, y: 0 });
+  const [gaussianStddev, setGaussianStddev] = useState(55); // ~50mm
 
   const runHitDistribution = useCallback(async (canvas: HTMLCanvasElement) => {
     const device = await getDevice();
@@ -261,33 +256,32 @@ export const HitDistribution: React.FC<HitDistributionProps> = ({
   }, [showDartboardColors, targetPosition, gaussianStddev, isDragging]);
 
   return (
-    <div>
-      <h2>Hit Distribution</h2>
-      <p>Shows the probability distribution of where darts will land when aiming at the target location, based on a 2D Gaussian distribution.</p>
-      
-      {isReady && (
-        <div style={{ position: 'relative', display: 'inline-block' }}>
-          <CanvasVisualization
-            key={canvasKey}
-            id="hit-distribution"
-            width={width}
-            height={width}
-            onCanvasReady={runHitDistribution}
-          />
-          {onTargetPositionChange && (
+    <div style={{ display: "flex" }}>
+      <div style={{ flex: 1 }}>
+        <h2>Hit Distribution</h2>
+        <p>Shows the probability distribution of where darts will land when aiming at the target location, based on a 2D Gaussian distribution.</p>
+        
+        {isReady && (
+          <div style={{ position: 'relative', display: 'inline-block' }}>
+            <CanvasVisualization
+              key={canvasKey}
+              id="hit-distribution"
+              width={width}
+              height={width}
+              onCanvasReady={runHitDistribution}
+            />
             <TargetIndicator
               targetPosition={targetPosition}
-              onTargetPositionChange={onTargetPositionChange}
+              onTargetPositionChange={setTargetPosition}
               onDragStart={() => setIsDragging(true)}
               onDragEnd={() => setIsDragging(false)}
               canvasWidth={width}
               canvasHeight={width}
             />
-          )}
-        </div>
-      )}
-      
-      {segmentProbabilities.length > 0 && (
+          </div>
+        )}
+        
+        {segmentProbabilities.length > 0 && (
         <div style={{ marginTop: '20px' }}>
           <h3>Hit Probabilities by Segment</h3>
           <div style={{ 
@@ -350,6 +344,45 @@ export const HitDistribution: React.FC<HitDistributionProps> = ({
           </div>
         </div>
       )}
+      </div>
+      
+      {/* Options sidebar */}
+      <div
+        style={{
+          width: "300px",
+          padding: "20px",
+          backgroundColor: "#f8f8f8",
+          borderLeft: "1px solid #ddd",
+          overflow: "auto",
+        }}
+      >
+        <h3>Options</h3>
+        
+        <div style={{ marginTop: "20px" }}>
+          <label style={{ display: "flex", alignItems: "center", cursor: "pointer" }}>
+            <input
+              type="checkbox"
+              checked={showDartboardColors}
+              onChange={(e) => setShowDartboardColors(e.target.checked)}
+              style={{ marginRight: "8px" }}
+            />
+            Show Dartboard Colors
+          </label>
+          <p style={{ fontSize: "14px", color: "#666", marginTop: "8px" }}>
+            Display visualizations with traditional dartboard colors (green and cream segments).
+          </p>
+        </div>
+
+        <GaussianDistributionControls
+          gaussianStddevPixels={gaussianStddev}
+          onGaussianStddevPixelsChange={setGaussianStddev}
+        />
+
+        <TargetPositionDisplay 
+          targetPosition={targetPosition} 
+          onTargetPositionChange={setTargetPosition}
+        />
+      </div>
     </div>
   );
 };

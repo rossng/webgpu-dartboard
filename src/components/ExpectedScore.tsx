@@ -1,25 +1,18 @@
 import expected from "bundle-text:../expected.wgsl";
 import React, { useCallback, useEffect, useRef, useState } from "react";
+import { useQueuedComputation } from "../hooks/useQueuedComputation";
 import { makeDartboard } from "../webgpu/dartboard";
+import { drawRadialScores, drawSegmentBoundaries } from "../webgpu/dartboard-labels";
 import { getDevice, width } from "../webgpu/util";
 import { getViridisColor } from "../webgpu/viridis";
 import { CanvasVisualization } from "./CanvasVisualization";
+import { GaussianDistributionControls } from "./GaussianDistributionControls";
 import { TargetIndicator } from "./TargetIndicator";
-import { drawSegmentBoundaries, drawRadialScores } from "../webgpu/dartboard-labels";
+import { TargetPositionDisplay } from "./TargetPositionDisplay";
 
-interface ExpectedScoreProps {
-  gaussianStddev?: number;
-  targetPosition?: { x: number; y: number };
-  onTargetPositionChange?: (position: { x: number; y: number }) => void;
-  showSegmentBoundaries?: boolean;
-}
+interface ExpectedScoreProps {}
 
-export const ExpectedScore: React.FC<ExpectedScoreProps> = ({
-  gaussianStddev = 100,
-  targetPosition = { x: 0, y: 0 },
-  onTargetPositionChange,
-  showSegmentBoundaries = false,
-}) => {
+export const ExpectedScore: React.FC<ExpectedScoreProps> = () => {
   const [isReady, setIsReady] = useState(false);
   const renderBufferRef = useRef<GPUBuffer | null>(null);
   const [expectedScoreRange, setExpectedScoreRange] = useState<{ min: number; max: number }>({
@@ -29,8 +22,14 @@ export const ExpectedScore: React.FC<ExpectedScoreProps> = ({
   const [expectedScoreAtTarget, setExpectedScoreAtTarget] = useState<number | null>(null);
   const resultDataRef = useRef<Float32Array | null>(null);
   const [isDragging, setIsDragging] = useState(false);
-  const [isComputing, setIsComputing] = useState(false);
   const [computationCounter, setComputationCounter] = useState(0);
+  const [gaussianStddev, setGaussianStddev] = useState(55); // ~50mm
+  const [targetPosition, setTargetPosition] = useState({ x: 0, y: 0 });
+  const [showSegmentBoundaries, setShowSegmentBoundaries] = useState(false);
+
+  // Debouncing state
+  const [isUserInteracting, setIsUserInteracting] = useState(false);
+  const debounceTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const updateExpectedScoreAtTarget = useCallback(() => {
     if (resultDataRef.current && targetPosition) {
@@ -47,13 +46,10 @@ export const ExpectedScore: React.FC<ExpectedScoreProps> = ({
 
   const computeExpected = useCallback(
     async (canvas: HTMLCanvasElement) => {
-      setIsComputing(true);
-
       try {
         const device = await getDevice();
         if (!device) {
           console.error("Cannot continue without a device");
-          setIsComputing(false);
           return;
         }
 
@@ -130,6 +126,7 @@ export const ExpectedScore: React.FC<ExpectedScoreProps> = ({
         const start = Date.now();
         console.log("start compute expected score");
         await resultBuffer.mapAsync(GPUMapMode.READ);
+
         const result = new Float32Array(resultBuffer.getMappedRange().slice(0));
         console.log("finish compute expected score", (Date.now() - start) / 1000);
 
@@ -140,7 +137,6 @@ export const ExpectedScore: React.FC<ExpectedScoreProps> = ({
 
         const ctx = canvas.getContext("2d");
         if (!ctx) {
-          setIsComputing(false);
           return;
         }
 
@@ -167,41 +163,70 @@ export const ExpectedScore: React.FC<ExpectedScoreProps> = ({
         }
 
         ctx.putImageData(imageData, 0, 0);
-        
+
         // Draw segment boundaries if enabled
         if (showSegmentBoundaries) {
           const centerX = width / 2;
           const centerY = width / 2;
           drawSegmentBoundaries(ctx, centerX, centerY, width, 0.3);
         }
-        
+
         // Draw radial scores around the dartboard
         const centerX = width / 2;
         const centerY = width / 2;
         const labelRadius = width * 0.45; // Place labels outside the dartboard
-        drawRadialScores(ctx, centerX, centerY, labelRadius, 14, '#fff');
+        drawRadialScores(ctx, centerX, centerY, labelRadius, 14, "#fff");
       } catch (error) {
         console.error("Error computing expected scores:", error);
-      } finally {
-        setIsComputing(false);
+        throw error; // Re-throw so the hook can handle it
       }
     },
     [gaussianStddev, showSegmentBoundaries],
   );
 
+  // Use the queued computation hook
+  const { executeComputation, isComputing } = useQueuedComputation(computeExpected);
+
   useEffect(() => {
     setIsReady(true);
+
+    // Cleanup function to clear any pending timeouts
+    return () => {
+      if (debounceTimeoutRef.current) {
+        clearTimeout(debounceTimeoutRef.current);
+      }
+    };
   }, []);
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
+  // Effect to handle segment boundaries changes (immediate)
   useEffect(() => {
-    // Re-compute when stddev or segment boundaries toggle changes
-    if (canvasRef.current && isReady) {
-      console.log("re-computing expected score", gaussianStddev, showSegmentBoundaries, isReady);
-      computeExpected(canvasRef.current);
+    if (!canvasRef.current || !isReady || isUserInteracting) return;
+
+    executeComputation(canvasRef.current);
+  }, [showSegmentBoundaries, isReady, isUserInteracting, executeComputation]);
+
+  // Effect to handle gaussian changes (debounced)
+  useEffect(() => {
+    if (!canvasRef.current || !isReady) return;
+
+    // Cancel any existing timeout
+    if (debounceTimeoutRef.current) {
+      clearTimeout(debounceTimeoutRef.current);
     }
-  }, [gaussianStddev, showSegmentBoundaries, isReady]); // Remove computeExpected from dependencies
+
+    // Always schedule a delayed computation, regardless of interaction state
+    // This ensures we get the final value after user stops interacting
+    debounceTimeoutRef.current = setTimeout(
+      () => {
+        if (canvasRef.current) {
+          executeComputation(canvasRef.current);
+        }
+      },
+      isUserInteracting ? 500 : 100,
+    ); // Longer delay while interacting, shorter when not
+  }, [gaussianStddev, isReady, isUserInteracting, executeComputation]);
 
   // Update expected score when target position changes OR computation completes
   useEffect(() => {
@@ -211,10 +236,28 @@ export const ExpectedScore: React.FC<ExpectedScoreProps> = ({
   const handleCanvasReady = useCallback(
     (canvas: HTMLCanvasElement) => {
       canvasRef.current = canvas;
-      computeExpected(canvas);
+      executeComputation(canvas);
     },
-    [computeExpected],
+    [executeComputation],
   );
+
+  // Handle gaussian slider interactions
+  const handleGaussianChange = useCallback((value: number) => {
+    setGaussianStddev(value);
+  }, []);
+
+  const handleGaussianInteractionStart = useCallback(() => {
+    setIsUserInteracting(true);
+  }, []);
+
+  const handleGaussianInteractionEnd = useCallback(() => {
+    setIsUserInteracting(false);
+  }, []);
+
+  // Handle target position changes
+  const handleTargetPositionChange = useCallback((position: { x: number; y: number }) => {
+    setTargetPosition(position);
+  }, []);
 
   const renderColorScale = () => {
     const scaleHeight = width; // Match canvas height
@@ -282,86 +325,132 @@ export const ExpectedScore: React.FC<ExpectedScoreProps> = ({
   };
 
   return (
-    <div>
+    <div style={{ display: "flex" }}>
       <style>{`
         @keyframes spin {
           0% { transform: rotate(0deg); }
           100% { transform: rotate(360deg); }
         }
       `}</style>
-      <h2>Expected Score</h2>
-      <p>
-        The expected score when aiming at each position on the dartboard, calculated by summing
-        probability-weighted scores across all possible hit locations. Brighter areas indicate
-        higher expected scores, showing optimal aiming points.
-      </p>
-      {isReady && (
-        <div style={{ display: "flex", alignItems: "center" }}>
-          <div style={{ position: "relative", display: "inline-block" }}>
-            {isComputing && (
-              <div
-                style={{
-                  position: "absolute",
-                  top: "10px",
-                  right: "10px",
-                  width: "30px",
-                  height: "30px",
-                  zIndex: 10,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  backgroundColor: "rgba(255, 255, 255, 0.9)",
-                  borderRadius: "50%",
-                  boxShadow: "0 2px 4px rgba(0, 0, 0, 0.2)",
-                }}
-              >
+      <div style={{ flex: 1 }}>
+        <h2>Expected Score</h2>
+        <p>
+          The expected score when aiming at each position on the dartboard, calculated by summing
+          probability-weighted scores across all possible hit locations. Brighter areas indicate
+          higher expected scores, showing optimal aiming points.
+        </p>
+        {isReady && (
+          <div style={{ display: "flex", alignItems: "center" }}>
+            <div style={{ position: "relative", display: "inline-block" }}>
+              {isComputing && (
                 <div
                   style={{
-                    width: "20px",
-                    height: "20px",
-                    border: "2px solid #f3f3f3",
-                    borderTop: "2px solid #3498db",
+                    position: "absolute",
+                    top: "10px",
+                    right: "10px",
+                    width: "30px",
+                    height: "30px",
+                    zIndex: 10,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    backgroundColor: "rgba(255, 255, 255, 0.9)",
                     borderRadius: "50%",
-                    animation: "spin 1s linear infinite",
+                    boxShadow: "0 2px 4px rgba(0, 0, 0, 0.2)",
                   }}
-                />
-              </div>
-            )}
-            <CanvasVisualization
-              id="expected-score"
-              width={width}
-              height={width}
-              onCanvasReady={handleCanvasReady}
-            />
-            {onTargetPositionChange && (
+                >
+                  <div
+                    style={{
+                      width: "20px",
+                      height: "20px",
+                      border: "2px solid #f3f3f3",
+                      borderTop: "2px solid #3498db",
+                      borderRadius: "50%",
+                      animation: "spin 1s linear infinite",
+                    }}
+                  />
+                </div>
+              )}
+              <CanvasVisualization
+                id="expected-score"
+                width={width}
+                height={width}
+                onCanvasReady={handleCanvasReady}
+              />
               <TargetIndicator
                 targetPosition={targetPosition}
-                onTargetPositionChange={onTargetPositionChange}
-                onDragStart={() => setIsDragging(true)}
-                onDragEnd={() => setIsDragging(false)}
+                onTargetPositionChange={handleTargetPositionChange}
+                onDragStart={() => {
+                  setIsDragging(true);
+                  setIsUserInteracting(true);
+                }}
+                onDragEnd={() => {
+                  setIsDragging(false);
+                  setIsUserInteracting(false);
+                }}
                 canvasWidth={width}
                 canvasHeight={width}
               />
+            </div>
+            {renderColorScale()}
+            {expectedScoreAtTarget !== null && (
+              <div
+                style={{
+                  marginLeft: "40px",
+                  fontSize: "24px",
+                  fontWeight: "bold",
+                  minWidth: "120px",
+                  display: "flex",
+                  alignItems: "center",
+                  height: width,
+                }}
+              >
+                {expectedScoreAtTarget.toFixed(2)}
+              </div>
             )}
           </div>
-          {renderColorScale()}
-          {expectedScoreAtTarget !== null && (
-            <div
-              style={{
-                marginLeft: "40px",
-                fontSize: "24px",
-                fontWeight: "bold",
-                minWidth: "120px",
-                display: "flex",
-                alignItems: "center",
-                height: width,
-              }}
-            >
-              {expectedScoreAtTarget.toFixed(2)}
-            </div>
-          )}
+        )}
+      </div>
+
+      {/* Options sidebar */}
+      <div
+        style={{
+          width: "300px",
+          padding: "20px",
+          backgroundColor: "#f8f8f8",
+          borderLeft: "1px solid #ddd",
+          overflow: "auto",
+        }}
+      >
+        <h3>Options</h3>
+
+        <div style={{ marginTop: "20px" }}>
+          <label style={{ display: "flex", alignItems: "center", cursor: "pointer" }}>
+            <input
+              type="checkbox"
+              checked={showSegmentBoundaries}
+              onChange={(e) => setShowSegmentBoundaries(e.target.checked)}
+              style={{ marginRight: "8px" }}
+            />
+            Show Segment Boundaries
+          </label>
+          <p style={{ fontSize: "14px", color: "#666", marginTop: "8px" }}>
+            Overlay subtle lines showing dartboard segment divisions and scoring rings.
+          </p>
         </div>
-      )}
+
+        <GaussianDistributionControls
+          gaussianStddevPixels={gaussianStddev}
+          onGaussianStddevPixelsChange={handleGaussianChange}
+          onInteractionStart={handleGaussianInteractionStart}
+          onInteractionEnd={handleGaussianInteractionEnd}
+        />
+
+        <TargetPositionDisplay
+          targetPosition={targetPosition}
+          onTargetPositionChange={handleTargetPositionChange}
+        />
+      </div>
     </div>
   );
 };

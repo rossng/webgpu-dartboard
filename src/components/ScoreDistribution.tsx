@@ -1,6 +1,8 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { CanvasVisualization } from './CanvasVisualization';
 import { TargetIndicator } from './TargetIndicator';
+import { GaussianDistributionControls } from './GaussianDistributionControls';
+import { TargetPositionDisplay } from './TargetPositionDisplay';
 import { getDevice, width } from '../webgpu/util';
 import { makeDartboard } from '../webgpu/dartboard';
 import { getDartboardColor } from '../webgpu/dartboard-colors';
@@ -9,12 +11,7 @@ import { getViridisColor } from '../webgpu/viridis';
 import weightedGrid from 'bundle-text:../weighted-grid.wgsl';
 import segmentProbabilitiesShader from 'bundle-text:../segment-probabilities.wgsl';
 
-interface ScoreDistributionProps {
-  showDartboardColors?: boolean;
-  targetPosition?: { x: number; y: number };
-  onTargetPositionChange?: (position: { x: number; y: number }) => void;
-  gaussianStddev?: number;
-}
+interface ScoreDistributionProps {}
 
 interface SegmentProbability {
   segment: string;
@@ -22,16 +19,14 @@ interface SegmentProbability {
   probability: number;
 }
 
-export const ScoreDistribution: React.FC<ScoreDistributionProps> = ({ 
-  showDartboardColors, 
-  targetPosition = { x: 0, y: 0 },
-  onTargetPositionChange,
-  gaussianStddev = 100
-}) => {
+export const ScoreDistribution: React.FC<ScoreDistributionProps> = () => {
   const [isReady, setIsReady] = useState(false);
   const [canvasKey, setCanvasKey] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   const [segmentProbabilities, setSegmentProbabilities] = useState<SegmentProbability[]>([]);
+  const [showDartboardColors, setShowDartboardColors] = useState(false);
+  const [targetPosition, setTargetPosition] = useState({ x: 0, y: 0 });
+  const [gaussianStddev, setGaussianStddev] = useState(55); // ~50mm
 
   const runScoreDistribution = useCallback(async (canvas: HTMLCanvasElement) => {
     const device = await getDevice();
@@ -348,33 +343,32 @@ export const ScoreDistribution: React.FC<ScoreDistributionProps> = ({
   }, [showDartboardColors, targetPosition, gaussianStddev, isDragging]);
 
   return (
-    <div>
-      <h2>Score Distribution</h2>
-      <p>Shows the score-weighted probability distribution (probability × score at each position). Brighter areas contribute more to the expected score.</p>
-      
-      {isReady && (
-        <div style={{ position: 'relative', display: 'inline-block' }}>
-          <CanvasVisualization
-            key={canvasKey}
-            id="score-distribution"
-            width={width}
-            height={width}
-            onCanvasReady={runScoreDistribution}
-          />
-          {onTargetPositionChange && (
+    <div style={{ display: "flex" }}>
+      <div style={{ flex: 1 }}>
+        <h2>Score Distribution</h2>
+        <p>Shows the score-weighted probability distribution (probability × score at each position). Brighter areas contribute more to the expected score.</p>
+        
+        {isReady && (
+          <div style={{ position: 'relative', display: 'inline-block' }}>
+            <CanvasVisualization
+              key={canvasKey}
+              id="score-distribution"
+              width={width}
+              height={width}
+              onCanvasReady={runScoreDistribution}
+            />
             <TargetIndicator
               targetPosition={targetPosition}
-              onTargetPositionChange={onTargetPositionChange}
+              onTargetPositionChange={setTargetPosition}
               onDragStart={() => setIsDragging(true)}
               onDragEnd={() => setIsDragging(false)}
               canvasWidth={width}
               canvasHeight={width}
             />
-          )}
-        </div>
-      )}
-      
-      {segmentProbabilities.length > 0 && (
+          </div>
+        )}
+        
+        {segmentProbabilities.length > 0 && (
         <div style={{ marginTop: '20px' }}>
           <h3>Score Probabilities by Segment</h3>
           <div style={{ 
@@ -446,6 +440,45 @@ export const ScoreDistribution: React.FC<ScoreDistributionProps> = ({
           </div>
         </div>
       )}
+      </div>
+      
+      {/* Options sidebar */}
+      <div
+        style={{
+          width: "300px",
+          padding: "20px",
+          backgroundColor: "#f8f8f8",
+          borderLeft: "1px solid #ddd",
+          overflow: "auto",
+        }}
+      >
+        <h3>Options</h3>
+        
+        <div style={{ marginTop: "20px" }}>
+          <label style={{ display: "flex", alignItems: "center", cursor: "pointer" }}>
+            <input
+              type="checkbox"
+              checked={showDartboardColors}
+              onChange={(e) => setShowDartboardColors(e.target.checked)}
+              style={{ marginRight: "8px" }}
+            />
+            Show Dartboard Colors
+          </label>
+          <p style={{ fontSize: "14px", color: "#666", marginTop: "8px" }}>
+            Display visualizations with traditional dartboard colors (green and cream segments).
+          </p>
+        </div>
+
+        <GaussianDistributionControls
+          gaussianStddevPixels={gaussianStddev}
+          onGaussianStddevPixelsChange={setGaussianStddev}
+        />
+
+        <TargetPositionDisplay 
+          targetPosition={targetPosition} 
+          onTargetPositionChange={setTargetPosition}
+        />
+      </div>
     </div>
   );
 };

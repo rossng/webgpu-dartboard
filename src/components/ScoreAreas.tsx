@@ -5,9 +5,7 @@ import { getDartboardColor } from '../webgpu/dartboard-colors';
 import { drawRadialScores } from '../webgpu/dartboard-labels';
 import scoreAreasShader from 'bundle-text:../score-areas.wgsl';
 
-interface ScoreAreasProps {
-  showDartboardColors?: boolean;
-}
+interface ScoreAreasProps {}
 
 // Define all possible dartboard areas
 const DARTBOARD_AREAS = [
@@ -25,11 +23,12 @@ const DARTBOARD_AREAS = [
   }).flat(),
 ];
 
-export const ScoreAreas: React.FC<ScoreAreasProps> = ({ showDartboardColors }) => {
+export const ScoreAreas: React.FC<ScoreAreasProps> = () => {
   const [isReady, setIsReady] = useState(false);
   const [selectedArea, setSelectedArea] = useState('bull');
   const [canvasKey, setCanvasKey] = useState(0);
   const [pixelCount, setPixelCount] = useState<number | null>(null);
+  const [showDartboardColors, setShowDartboardColors] = useState(true);
 
   const runScoreAreas = useCallback(async (canvas: HTMLCanvasElement) => {
     const device = await getDevice();
@@ -190,61 +189,91 @@ export const ScoreAreas: React.FC<ScoreAreasProps> = ({ showDartboardColors }) =
   }, [showDartboardColors, selectedArea]);
 
   return (
-    <div>
-      <h2>Score Areas</h2>
-      <p>Highlight specific scoring areas on the dartboard. Select an area from the dropdown to see it highlighted.</p>
-      
-      <div style={{ marginBottom: '20px' }}>
-        <label htmlFor="area-select" style={{ marginRight: '10px', fontWeight: 'bold' }}>
-          Select Area:
-        </label>
-        <select
-          id="area-select"
-          value={selectedArea}
-          onChange={(e) => setSelectedArea(e.target.value)}
-          style={{
-            padding: '8px 12px',
-            fontSize: '14px',
-            border: '1px solid #ccc',
+    <div style={{ display: "flex" }}>
+      <div style={{ flex: 1 }}>
+        <h2>Score Areas</h2>
+        <p>Highlight specific scoring areas on the dartboard. Select an area from the dropdown to see it highlighted.</p>
+        
+        <div style={{ marginBottom: '20px' }}>
+          <label htmlFor="area-select" style={{ marginRight: '10px', fontWeight: 'bold' }}>
+            Select Area:
+          </label>
+          <select
+            id="area-select"
+            value={selectedArea}
+            onChange={(e) => setSelectedArea(e.target.value)}
+            style={{
+              padding: '8px 12px',
+              fontSize: '14px',
+              border: '1px solid #ccc',
+              borderRadius: '4px',
+              backgroundColor: 'white',
+              minWidth: '200px'
+            }}
+          >
+            {DARTBOARD_AREAS.map((area) => (
+              <option key={area.value} value={area.value}>
+                {area.label}
+              </option>
+            ))}
+          </select>
+        </div>
+        
+        {pixelCount !== null && (
+          <div style={{ 
+            marginBottom: '20px', 
+            padding: '10px', 
+            backgroundColor: '#f0f0f0', 
             borderRadius: '4px',
-            backgroundColor: 'white',
-            minWidth: '200px'
-          }}
-        >
-          {DARTBOARD_AREAS.map((area) => (
-            <option key={area.value} value={area.value}>
-              {area.label}
-            </option>
-          ))}
-        </select>
+            fontSize: '14px'
+          }}>
+            <strong>Selected Area:</strong> {pixelCount.toLocaleString()} pixels
+            {selectedArea !== 'none' && (
+              <span style={{ color: '#666', marginLeft: '10px' }}>
+                ({((pixelCount / (width * width)) * 100).toFixed(2)}% of total area)
+              </span>
+            )}
+          </div>
+        )}
+        
+        {isReady && (
+          <CanvasVisualization
+            key={canvasKey}
+            id="score-areas"
+            width={width}
+            height={width}
+            onCanvasReady={runScoreAreas}
+          />
+        )}
       </div>
       
-      {pixelCount !== null && (
-        <div style={{ 
-          marginBottom: '20px', 
-          padding: '10px', 
-          backgroundColor: '#f0f0f0', 
-          borderRadius: '4px',
-          fontSize: '14px'
-        }}>
-          <strong>Selected Area:</strong> {pixelCount.toLocaleString()} pixels
-          {selectedArea !== 'none' && (
-            <span style={{ color: '#666', marginLeft: '10px' }}>
-              ({((pixelCount / (width * width)) * 100).toFixed(2)}% of total area)
-            </span>
-          )}
+      {/* Options sidebar */}
+      <div
+        style={{
+          width: "300px",
+          padding: "20px",
+          backgroundColor: "#f8f8f8",
+          borderLeft: "1px solid #ddd",
+          overflow: "auto",
+        }}
+      >
+        <h3>Options</h3>
+        
+        <div style={{ marginTop: "20px" }}>
+          <label style={{ display: "flex", alignItems: "center", cursor: "pointer" }}>
+            <input
+              type="checkbox"
+              checked={showDartboardColors}
+              onChange={(e) => setShowDartboardColors(e.target.checked)}
+              style={{ marginRight: "8px" }}
+            />
+            Show Dartboard Colors
+          </label>
+          <p style={{ fontSize: "14px", color: "#666", marginTop: "8px" }}>
+            Display visualizations with traditional dartboard colors (green and cream segments).
+          </p>
         </div>
-      )}
-      
-      {isReady && (
-        <CanvasVisualization
-          key={canvasKey}
-          id="score-areas"
-          width={width}
-          height={width}
-          onCanvasReady={runScoreAreas}
-        />
-      )}
+      </div>
     </div>
   );
 };
