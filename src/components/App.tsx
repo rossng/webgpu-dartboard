@@ -3,12 +3,14 @@ import { Dartboard } from "./Dartboard";
 import { HitDistribution } from "./HitDistribution";
 import { OptimalAiming } from "./OptimalAiming";
 import { RenderBuffer } from "./RenderBuffer";
+import { ScoreAreas } from "./ScoreAreas";
 import { ScoreDistribution } from "./ScoreDistribution";
 
 type TabName =
   | "hit-distribution"
   | "score-distribution"
   | "dartboard"
+  | "score-areas"
   | "optimal-aiming"
   | "render-buffer";
 
@@ -23,15 +25,16 @@ interface Tab {
 }
 
 const tabs: Tab[] = [
+  { id: "dartboard", label: "Dartboard", component: Dartboard },
+  { id: "score-areas", label: "Score Areas", component: ScoreAreas },
   { id: "hit-distribution", label: "Hit Distribution", component: HitDistribution },
   { id: "score-distribution", label: "Score Distribution", component: ScoreDistribution },
-  { id: "dartboard", label: "Dartboard", component: Dartboard },
   { id: "optimal-aiming", label: "Optimal Aiming", component: OptimalAiming },
   { id: "render-buffer", label: "Render Buffer", component: RenderBuffer },
 ];
 
 export const App: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<TabName>("hit-distribution");
+  const [activeTab, setActiveTab] = useState<TabName>("dartboard");
   const [showDartboardColors, setShowDartboardColors] = useState(false);
   const [targetPosition, setTargetPosition] = useState({ x: 0, y: 0 }); // Normalized coordinates (-1 to 1)
 
