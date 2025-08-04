@@ -5,17 +5,20 @@ import { getDevice, width } from "../webgpu/util";
 import { getViridisColor } from "../webgpu/viridis";
 import { CanvasVisualization } from "./CanvasVisualization";
 import { TargetIndicator } from "./TargetIndicator";
+import { drawSegmentBoundaries, drawRadialScores } from "../webgpu/dartboard-labels";
 
 interface ExpectedScoreProps {
   gaussianStddev?: number;
   targetPosition?: { x: number; y: number };
   onTargetPositionChange?: (position: { x: number; y: number }) => void;
+  showSegmentBoundaries?: boolean;
 }
 
 export const ExpectedScore: React.FC<ExpectedScoreProps> = ({
   gaussianStddev = 100,
   targetPosition = { x: 0, y: 0 },
   onTargetPositionChange,
+  showSegmentBoundaries = false,
 }) => {
   const [isReady, setIsReady] = useState(false);
   const renderBufferRef = useRef<GPUBuffer | null>(null);
@@ -164,13 +167,26 @@ export const ExpectedScore: React.FC<ExpectedScoreProps> = ({
         }
 
         ctx.putImageData(imageData, 0, 0);
+        
+        // Draw segment boundaries if enabled
+        if (showSegmentBoundaries) {
+          const centerX = width / 2;
+          const centerY = width / 2;
+          drawSegmentBoundaries(ctx, centerX, centerY, width, 0.3);
+        }
+        
+        // Draw radial scores around the dartboard
+        const centerX = width / 2;
+        const centerY = width / 2;
+        const labelRadius = width * 0.45; // Place labels outside the dartboard
+        drawRadialScores(ctx, centerX, centerY, labelRadius, 14, '#fff');
       } catch (error) {
         console.error("Error computing expected scores:", error);
       } finally {
         setIsComputing(false);
       }
     },
-    [gaussianStddev],
+    [gaussianStddev, showSegmentBoundaries],
   );
 
   useEffect(() => {
@@ -180,12 +196,12 @@ export const ExpectedScore: React.FC<ExpectedScoreProps> = ({
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
   useEffect(() => {
-    // Re-compute when stddev changes
+    // Re-compute when stddev or segment boundaries toggle changes
     if (canvasRef.current && isReady) {
-      console.log("re-computing expected score", gaussianStddev, isReady);
+      console.log("re-computing expected score", gaussianStddev, showSegmentBoundaries, isReady);
       computeExpected(canvasRef.current);
     }
-  }, [gaussianStddev, isReady]); // Remove computeExpected from dependencies
+  }, [gaussianStddev, showSegmentBoundaries, isReady]); // Remove computeExpected from dependencies
 
   // Update expected score when target position changes OR computation completes
   useEffect(() => {

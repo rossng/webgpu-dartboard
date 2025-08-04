@@ -20,6 +20,7 @@ interface Tab {
     targetPosition?: { x: number; y: number };
     onTargetPositionChange?: (position: { x: number; y: number }) => void;
     gaussianStddev?: number;
+    showSegmentBoundaries?: boolean;
   }>;
 }
 
@@ -34,6 +35,7 @@ const tabs: Tab[] = [
 export const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<TabName>("dartboard");
   const [showDartboardColors, setShowDartboardColors] = useState(false);
+  const [showSegmentBoundaries, setShowSegmentBoundaries] = useState(false);
   const [targetPosition, setTargetPosition] = useState({ x: 0, y: 0 }); // Normalized coordinates (-1 to 1)
   const [gaussianStddev, setGaussianStddev] = useState(100); // Standard deviation in pixels
 
@@ -80,6 +82,7 @@ export const App: React.FC = () => {
         <div style={{ border: "1px solid #ddd", padding: "20px", borderRadius: "4px" }}>
           <ActiveComponent
             showDartboardColors={showDartboardColors}
+            showSegmentBoundaries={showSegmentBoundaries}
             targetPosition={targetPosition}
             onTargetPositionChange={setTargetPosition}
             gaussianStddev={gaussianStddev}
@@ -109,6 +112,21 @@ export const App: React.FC = () => {
           </label>
           <p style={{ fontSize: "14px", color: "#666", marginTop: "8px" }}>
             Display visualizations with traditional dartboard colors (green and cream segments).
+          </p>
+        </div>
+
+        <div style={{ marginTop: "20px" }}>
+          <label style={{ display: "flex", alignItems: "center", cursor: "pointer" }}>
+            <input
+              type="checkbox"
+              checked={showSegmentBoundaries}
+              onChange={(e) => setShowSegmentBoundaries(e.target.checked)}
+              style={{ marginRight: "8px" }}
+            />
+            Show Segment Boundaries
+          </label>
+          <p style={{ fontSize: "14px", color: "#666", marginTop: "8px" }}>
+            Overlay subtle lines showing dartboard segment divisions and scoring rings (Expected Score tab only).
           </p>
         </div>
 
