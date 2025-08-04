@@ -1,12 +1,12 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { CanvasVisualization } from './CanvasVisualization';
-import { TargetIndicator } from './TargetIndicator';
-import { GaussianDistributionControls } from './GaussianDistributionControls';
-import { TargetPositionDisplay } from './TargetPositionDisplay';
+import { CanvasVisualization } from '../common/CanvasVisualization';
+import { TargetIndicator } from '../expected-score/TargetIndicator';
+import { GaussianDistributionControls } from '../expected-score/GaussianDistributionControls';
+import { TargetPositionDisplay } from '../expected-score/TargetPositionDisplay';
 import { getDevice, width } from '../webgpu/util';
-import { getDartboardColor } from '../webgpu/dartboard-colors';
-import { drawRadialScores } from '../webgpu/dartboard-labels';
-import segmentProbabilitiesShader from 'bundle-text:../segment-probabilities.wgsl';
+import { getDartboardColor } from '../dartboard/dartboard-colors';
+import { drawRadialScores } from '../dartboard/dartboard-labels';
+import segmentProbabilitiesShader from 'bundle-text:./segment-probabilities.wgsl';
 
 interface HitDistributionProps {}
 

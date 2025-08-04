@@ -1,9 +1,9 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { CanvasVisualization } from './CanvasVisualization';
+import { CanvasVisualization } from '../common/CanvasVisualization';
 import { getDevice, width } from '../webgpu/util';
-import { getDartboardColor } from '../webgpu/dartboard-colors';
-import { drawRadialScores } from '../webgpu/dartboard-labels';
-import scoreAreasShader from 'bundle-text:../score-areas.wgsl';
+import { getDartboardColor } from '../dartboard/dartboard-colors';
+import { drawRadialScores } from '../dartboard/dartboard-labels';
+import scoreAreasShader from 'bundle-text:./score-areas.wgsl';
 
 interface ScoreAreasProps {}
 

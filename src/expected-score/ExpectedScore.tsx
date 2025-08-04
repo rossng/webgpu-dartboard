@@ -12,11 +12,11 @@ import {
   isUserInteractingAtom,
   renderToCanvasAtom,
   targetPositionAtom,
-} from "../stores/expectedScoreAtoms";
+} from "./expectedScoreAtoms";
 import { width } from "../webgpu/util";
-import { CanvasVisualization } from "./CanvasVisualization";
+import { CanvasVisualization } from "../common/CanvasVisualization";
 import { GaussianDistributionControls } from "./GaussianDistributionControls";
-import { LoadingSpinner } from "./LoadingSpinner";
+import { LoadingSpinner } from "../common/LoadingSpinner";
 import { TargetIndicator } from "./TargetIndicator";
 import { TargetPositionDisplay } from "./TargetPositionDisplay";
 import { ViridisColorScale } from "./ViridisColorScale";

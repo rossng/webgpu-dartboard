@@ -1,9 +1,9 @@
 import React, { useState } from "react";
-import { Dartboard } from "./Dartboard";
-import { ExpectedScore } from "./ExpectedScore";
-import { HitDistribution } from "./HitDistribution";
-import { ScoreAreas } from "./ScoreAreas";
-import { ScoreDistribution } from "./ScoreDistribution";
+import { Dartboard } from "../dartboard/Dartboard";
+import { ExpectedScore } from "../expected-score/ExpectedScore";
+import { HitDistribution } from "../hit-distribution/HitDistribution";
+import { ScoreAreas } from "../score-areas/ScoreAreas";
+import { ScoreDistribution } from "../score-distribution/ScoreDistribution";
 
 type TabName =
   | "hit-distribution"

@@ -1,6 +1,6 @@
-import expected from "bundle-text:../expected.wgsl";
-import { makeDartboard } from "../webgpu/dartboard";
-import { drawRadialScores, drawSegmentBoundaries } from "../webgpu/dartboard-labels";
+import expected from "bundle-text:./expected.wgsl";
+import { makeDartboard } from "../dartboard/dartboard-definition";
+import { drawRadialScores, drawSegmentBoundaries } from "../dartboard/dartboard-labels";
 import { getDevice, width } from "../webgpu/util";
 import { getViridisColor } from "../webgpu/viridis";
 
