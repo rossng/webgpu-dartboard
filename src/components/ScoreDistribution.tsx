@@ -4,6 +4,7 @@ import { TargetIndicator } from './TargetIndicator';
 import { getDevice, width } from '../webgpu/util';
 import { makeDartboard } from '../webgpu/dartboard';
 import { getDartboardColor } from '../webgpu/dartboard-colors';
+import { drawRadialScores } from '../webgpu/dartboard-labels';
 import weightedGrid from 'bundle-text:../weighted-grid.wgsl';
 
 interface ScoreDistributionProps {
@@ -151,6 +152,12 @@ export const ScoreDistribution: React.FC<ScoreDistributionProps> = ({
     }
 
     ctx.putImageData(imageData, 0, 0);
+    
+    // Draw radial scores around the dartboard
+    const centerX = width / 2;
+    const centerY = width / 2;
+    const labelRadius = width * 0.45; // Place labels outside the dartboard
+    drawRadialScores(ctx, centerX, centerY, labelRadius, 14, '#fff');
   }, [showDartboardColors, targetPosition]);
 
   useEffect(() => {

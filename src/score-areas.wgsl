@@ -115,7 +115,8 @@ fn isInTripleArea(x: f32, y: f32, r: f32, scoreValue: i32) -> bool {
 }
 
 fn getSliceIndex(x: f32, y: f32) -> i32 {
-  let theta = atan2(y, x) + 3.14159265;
+  // Flip across y-axis by negating x
+  let theta = atan2(y, -x) + 3.14159265;
   let adjustedTheta = (theta + 3.14159265 / 20.0) % (2.0 * 3.14159265);
   let slice = (adjustedTheta / (2.0 * 3.14159265)) * 20.0;
   return i32(floor(slice));

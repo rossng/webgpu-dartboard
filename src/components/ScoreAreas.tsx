@@ -2,6 +2,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { CanvasVisualization } from './CanvasVisualization';
 import { getDevice, width } from '../webgpu/util';
 import { getDartboardColor } from '../webgpu/dartboard-colors';
+import { drawRadialScores } from '../webgpu/dartboard-labels';
 import scoreAreasShader from 'bundle-text:../score-areas.wgsl';
 
 interface ScoreAreasProps {
@@ -171,6 +172,12 @@ export const ScoreAreas: React.FC<ScoreAreasProps> = ({ showDartboardColors }) =
     }
 
     ctx.putImageData(imageData, 0, 0);
+    
+    // Draw radial scores around the dartboard
+    const centerX = width / 2;
+    const centerY = width / 2;
+    const labelRadius = width * 0.45; // Place labels outside the dartboard
+    drawRadialScores(ctx, centerX, centerY, labelRadius, 14, '#fff');
   }, [showDartboardColors, selectedArea]);
 
   useEffect(() => {

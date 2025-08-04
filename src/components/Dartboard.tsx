@@ -1,6 +1,7 @@
 import React, { useCallback, useRef, useEffect } from 'react';
 import { CanvasVisualization } from './CanvasVisualization';
 import { makeDartboard } from '../webgpu/dartboard';
+import { drawRadialScores } from '../webgpu/dartboard-labels';
 
 const WIDTH = 500;
 
@@ -28,6 +29,12 @@ export const Dartboard: React.FC = () => {
     }
 
     ctx.putImageData(imageData, 0, 0);
+    
+    // Draw radial scores around the dartboard
+    const centerX = WIDTH / 2;
+    const centerY = WIDTH / 2;
+    const labelRadius = WIDTH * 0.45; // Place labels outside the dartboard
+    drawRadialScores(ctx, centerX, centerY, labelRadius, 14, '#fff');
   }, []);
 
   return (

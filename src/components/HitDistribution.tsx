@@ -3,6 +3,7 @@ import { CanvasVisualization } from './CanvasVisualization';
 import { TargetIndicator } from './TargetIndicator';
 import { getDevice, width } from '../webgpu/util';
 import { getDartboardColor } from '../webgpu/dartboard-colors';
+import { drawRadialScores } from '../webgpu/dartboard-labels';
 import segmentProbabilitiesShader from 'bundle-text:../segment-probabilities.wgsl';
 
 interface HitDistributionProps {
@@ -237,6 +238,12 @@ export const HitDistribution: React.FC<HitDistributionProps> = ({
     }
 
     ctx.putImageData(imageData, 0, 0);
+    
+    // Draw radial scores around the dartboard
+    const centerX = width / 2;
+    const centerY = width / 2;
+    const labelRadius = width * 0.45; // Place labels outside the dartboard
+    drawRadialScores(ctx, centerX, centerY, labelRadius, 14, '#fff');
   }, [showDartboardColors, targetPosition]);
 
   useEffect(() => {
