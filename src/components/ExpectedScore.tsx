@@ -21,11 +21,13 @@ export const ExpectedScore: React.FC<ExpectedScoreProps> = () => {
   });
   const [expectedScoreAtTarget, setExpectedScoreAtTarget] = useState<number | null>(null);
   const resultDataRef = useRef<Float32Array | null>(null);
-  const [isDragging, setIsDragging] = useState(false);
+  const [_isDragging, setIsDragging] = useState(false);
   const [computationCounter, setComputationCounter] = useState(0);
   const [gaussianStddev, setGaussianStddev] = useState(55); // ~50mm
   const [targetPosition, setTargetPosition] = useState({ x: 0, y: 0 });
-  const [showSegmentBoundaries, setShowSegmentBoundaries] = useState(false);
+  const [showSegmentBoundaries, setShowSegmentBoundaries] = useState(true);
+  const [showHighestScore, setShowHighestScore] = useState(true);
+  const [highestScorePosition, setHighestScorePosition] = useState<{ x: number; y: number } | null>(null);
 
   // Debouncing state
   const [isUserInteracting, setIsUserInteracting] = useState(false);
@@ -144,6 +146,16 @@ export const ExpectedScore: React.FC<ExpectedScoreProps> = () => {
         const max = result.reduce((a, b) => Math.max(a, b), 0);
         const min = result.reduce((a, b) => Math.min(a, b), Infinity);
 
+        // Find the position of the highest score
+        const maxIndex = result.indexOf(max);
+        const maxY = Math.floor(maxIndex / width);
+        const maxX = maxIndex % width;
+        
+        // Convert pixel coordinates to normalized coordinates (-1 to 1)
+        const normalizedX = (maxX / width) * 2 - 1;
+        const normalizedY = (maxY / width) * 2 - 1;
+        setHighestScorePosition({ x: normalizedX, y: normalizedY });
+
         // Store the result data for mouse hover
         resultDataRef.current = result;
         setExpectedScoreRange({ min, max });
@@ -171,6 +183,22 @@ export const ExpectedScore: React.FC<ExpectedScoreProps> = () => {
           drawSegmentBoundaries(ctx, centerX, centerY, width, 0.3);
         }
 
+        // Draw red dot at highest score position if enabled
+        if (showHighestScore && highestScorePosition) {
+          const dotX = (highestScorePosition.x + 1) * width * 0.5;
+          const dotY = (highestScorePosition.y + 1) * width * 0.5;
+          
+          ctx.fillStyle = "red";
+          ctx.beginPath();
+          ctx.arc(dotX, dotY, 4, 0, 2 * Math.PI);
+          ctx.fill();
+          
+          // Add a white border for better visibility
+          ctx.strokeStyle = "white";
+          ctx.lineWidth = 2;
+          ctx.stroke();
+        }
+
         // Draw radial scores around the dartboard
         const centerX = width / 2;
         const centerY = width / 2;
@@ -181,7 +209,7 @@ export const ExpectedScore: React.FC<ExpectedScoreProps> = () => {
         throw error; // Re-throw so the hook can handle it
       }
     },
-    [gaussianStddev, showSegmentBoundaries],
+    [gaussianStddev, showSegmentBoundaries, showHighestScore],
   );
 
   // Use the queued computation hook
@@ -200,12 +228,12 @@ export const ExpectedScore: React.FC<ExpectedScoreProps> = () => {
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
-  // Effect to handle segment boundaries changes (immediate)
+  // Effect to handle segment boundaries and highest score display changes (immediate)
   useEffect(() => {
     if (!canvasRef.current || !isReady || isUserInteracting) return;
 
     executeComputation(canvasRef.current);
-  }, [showSegmentBoundaries, isReady, isUserInteracting, executeComputation]);
+  }, [showSegmentBoundaries, showHighestScore, isReady, isUserInteracting, executeComputation]);
 
   // Effect to handle gaussian changes (debounced)
   useEffect(() => {
@@ -436,6 +464,21 @@ export const ExpectedScore: React.FC<ExpectedScoreProps> = () => {
           </label>
           <p style={{ fontSize: "14px", color: "#666", marginTop: "8px" }}>
             Overlay subtle lines showing dartboard segment divisions and scoring rings.
+          </p>
+        </div>
+
+        <div style={{ marginTop: "20px" }}>
+          <label style={{ display: "flex", alignItems: "center", cursor: "pointer" }}>
+            <input
+              type="checkbox"
+              checked={showHighestScore}
+              onChange={(e) => setShowHighestScore(e.target.checked)}
+              style={{ marginRight: "8px" }}
+            />
+            Show Highest Expected Score
+          </label>
+          <p style={{ fontSize: "14px", color: "#666", marginTop: "8px" }}>
+            Display a red dot at the position with the highest expected score on the dartboard.
           </p>
         </div>
 
