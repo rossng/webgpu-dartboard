@@ -246,7 +246,7 @@ export const ScoreDistribution: React.FC<ScoreDistributionProps> = ({
       size: dartboardScore.byteLength,
       usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
     });
-    device.queue.writeBuffer(dartboardBuffer, 0, dartboardScore);
+    device.queue.writeBuffer(dartboardBuffer, 0, dartboardScore.buffer);
 
     // Target position and stddev buffer (ensure minimum 16 bytes for WebGPU uniform buffer alignment)
     const targetData = new Float32Array([targetPosition.x, targetPosition.y, gaussianStddev, gaussianStddev]);

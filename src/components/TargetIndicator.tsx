@@ -19,7 +19,7 @@ export const TargetIndicator: React.FC<TargetIndicatorProps> = ({
 }) => {
   const isDragging = useRef(false);
   const [dragPosition, setDragPosition] = useState(targetPosition);
-  const updateTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const updateTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Use drag position during dragging, target position otherwise
   const currentPosition = isDragging.current ? dragPosition : targetPosition;

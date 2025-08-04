@@ -3,7 +3,8 @@
   "version": "1.0.0",
   "description": "",
   "scripts": {
-    "serve": "parcel ./index.html"
+    "serve": "parcel ./index.html",
+    "typecheck": "tsc --noEmit"
   },
   "keywords": [],
   "author": "",

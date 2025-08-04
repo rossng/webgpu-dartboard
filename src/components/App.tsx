@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Dartboard } from "./Dartboard";
+import { ExpectedScore } from "./ExpectedScore";
 import { HitDistribution } from "./HitDistribution";
-import { OptimalAiming } from "./OptimalAiming";
 import { ScoreAreas } from "./ScoreAreas";
 import { ScoreDistribution } from "./ScoreDistribution";
 
@@ -10,12 +10,12 @@ type TabName =
   | "score-distribution"
   | "dartboard"
   | "score-areas"
-  | "optimal-aiming";
+  | "expected-score";
 
 interface Tab {
   id: TabName;
   label: string;
-  component: React.FC<{ 
+  component: React.FC<{
     showDartboardColors?: boolean;
     targetPosition?: { x: number; y: number };
     onTargetPositionChange?: (position: { x: number; y: number }) => void;
@@ -28,7 +28,7 @@ const tabs: Tab[] = [
   { id: "score-areas", label: "Score Areas", component: ScoreAreas },
   { id: "hit-distribution", label: "Hit Distribution", component: HitDistribution },
   { id: "score-distribution", label: "Score Distribution", component: ScoreDistribution },
-  { id: "optimal-aiming", label: "Optimal Aiming", component: OptimalAiming },
+  { id: "expected-score", label: "Expected Score", component: ExpectedScore },
 ];
 
 export const App: React.FC = () => {
@@ -36,10 +36,10 @@ export const App: React.FC = () => {
   const [showDartboardColors, setShowDartboardColors] = useState(false);
   const [targetPosition, setTargetPosition] = useState({ x: 0, y: 0 }); // Normalized coordinates (-1 to 1)
   const [gaussianStddev, setGaussianStddev] = useState(100); // Standard deviation in pixels
-  
-  // Convert pixels to millimeters: 
+
+  // Convert pixels to millimeters:
   // - Canvas is 500px representing -1 to +1 normalized coords (2 units total)
-  // - So 250px = 1 normalized unit  
+  // - So 250px = 1 normalized unit
   // - CENTER_TO_OUTER_DOUBLE (0.753881279 normalized) = 170mm real dartboard
   // - So 1 normalized unit = 170mm / 0.753881279 = 225.5mm
   // - Therefore 250px = 225.5mm, so 1px = 0.902mm
@@ -78,8 +78,8 @@ export const App: React.FC = () => {
         </div>
 
         <div style={{ border: "1px solid #ddd", padding: "20px", borderRadius: "4px" }}>
-          <ActiveComponent 
-            showDartboardColors={showDartboardColors} 
+          <ActiveComponent
+            showDartboardColors={showDartboardColors}
             targetPosition={targetPosition}
             onTargetPositionChange={setTargetPosition}
             gaussianStddev={gaussianStddev}
@@ -115,7 +115,14 @@ export const App: React.FC = () => {
         <div style={{ marginTop: "30px" }}>
           <h3>Gaussian Distribution</h3>
           <div style={{ marginBottom: "15px" }}>
-            <label style={{ display: "block", marginBottom: "8px", fontSize: "14px", fontWeight: "bold" }}>
+            <label
+              style={{
+                display: "block",
+                marginBottom: "8px",
+                fontSize: "14px",
+                fontWeight: "bold",
+              }}
+            >
               Standard Deviation: {gaussianStddevMm.toFixed(1)} mm
             </label>
             <input
@@ -127,7 +134,14 @@ export const App: React.FC = () => {
               onChange={(e) => setGaussianStddev(Number(e.target.value))}
               style={{ width: "100%", marginBottom: "8px" }}
             />
-            <div style={{ display: "flex", justifyContent: "space-between", fontSize: "12px", color: "#666" }}>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                fontSize: "12px",
+                color: "#666",
+              }}
+            >
               <span>Precise ({(25 * pixelToMm).toFixed(1)} mm)</span>
               <span>Spread ({(300 * pixelToMm).toFixed(1)} mm)</span>
             </div>
@@ -136,7 +150,9 @@ export const App: React.FC = () => {
             Pixel value: {gaussianStddev} px
           </div>
           <p style={{ fontSize: "12px", color: "#888" }}>
-            Controls the spread of the Gaussian distribution. Lower values mean more precise throws, higher values mean more scattered throws. Based on regulation dartboard dimensions (170mm to outer double ring).
+            Controls the spread of the Gaussian distribution. Lower values mean more precise throws,
+            higher values mean more scattered throws. Based on regulation dartboard dimensions
+            (170mm to outer double ring).
           </p>
         </div>
 
