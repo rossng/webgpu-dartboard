@@ -15,7 +15,6 @@ interface HitDistributionProps {
 
 interface SegmentProbability {
   segment: string;
-  score: number;
   probability: number;
 }
 
@@ -148,7 +147,6 @@ export const HitDistribution: React.FC<HitDistributionProps> = ({
       if (segmentResults[i] > 0) {
         probabilities.push({
           segment: `${radialScores[i]} (Single)`,
-          score: radialScores[i],
           probability: segmentResults[i] / totalProbability
         });
       }
@@ -160,7 +158,6 @@ export const HitDistribution: React.FC<HitDistributionProps> = ({
         const scoreIndex = i - 20;
         probabilities.push({
           segment: `T${radialScores[scoreIndex]} (Triple)`,
-          score: radialScores[scoreIndex] * 3,
           probability: segmentResults[i] / totalProbability
         });
       }
@@ -172,7 +169,6 @@ export const HitDistribution: React.FC<HitDistributionProps> = ({
         const scoreIndex = i - 40;
         probabilities.push({
           segment: `D${radialScores[scoreIndex]} (Double)`,
-          score: radialScores[scoreIndex] * 2,
           probability: segmentResults[i] / totalProbability
         });
       }
@@ -182,7 +178,6 @@ export const HitDistribution: React.FC<HitDistributionProps> = ({
     if (segmentResults[60] > 0) {
       probabilities.push({
         segment: 'Outer Bull',
-        score: 25,
         probability: segmentResults[60] / totalProbability
       });
     }
@@ -191,7 +186,6 @@ export const HitDistribution: React.FC<HitDistributionProps> = ({
     if (segmentResults[61] > 0) {
       probabilities.push({
         segment: 'Bull',
-        score: 50,
         probability: segmentResults[61] / totalProbability
       });
     }
@@ -200,7 +194,6 @@ export const HitDistribution: React.FC<HitDistributionProps> = ({
     if (segmentResults[62] > 0) {
       probabilities.push({
         segment: 'Miss',
-        score: 0,
         probability: segmentResults[62] / totalProbability
       });
     }
@@ -314,9 +307,6 @@ export const HitDistribution: React.FC<HitDistributionProps> = ({
                     Segment
                   </th>
                   <th style={{ padding: '8px', textAlign: 'right', borderBottom: '1px solid #ddd' }}>
-                    Score
-                  </th>
-                  <th style={{ padding: '8px', textAlign: 'right', borderBottom: '1px solid #ddd' }}>
                     Probability
                   </th>
                   <th style={{ padding: '8px', textAlign: 'right', borderBottom: '1px solid #ddd' }}>
@@ -334,9 +324,6 @@ export const HitDistribution: React.FC<HitDistributionProps> = ({
                     }}
                   >
                     <td style={{ padding: '6px 8px' }}>{seg.segment}</td>
-                    <td style={{ padding: '6px 8px', textAlign: 'right', fontWeight: 'bold' }}>
-                      {seg.score}
-                    </td>
                     <td style={{ padding: '6px 8px', textAlign: 'right', fontFamily: 'monospace' }}>
                       {seg.probability.toFixed(6)}
                     </td>
@@ -354,9 +341,6 @@ export const HitDistribution: React.FC<HitDistributionProps> = ({
             color: '#666',
             textAlign: 'center'
           }}>
-            <div>
-              Expected Score: {segmentProbabilities.reduce((sum, seg) => sum + (seg.score * seg.probability), 0).toFixed(2)} points
-            </div>
             <div style={{ marginTop: '4px' }}>
               Total Probability: {segmentProbabilities.reduce((sum, seg) => sum + seg.probability, 0).toFixed(6)} 
               <span style={{ color: segmentProbabilities.reduce((sum, seg) => sum + seg.probability, 0) > 0.999 ? '#28a745' : '#dc3545', marginLeft: '4px' }}>

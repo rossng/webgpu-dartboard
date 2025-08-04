@@ -6,12 +6,19 @@ import { makeDartboard } from '../webgpu/dartboard';
 import { getDartboardColor } from '../webgpu/dartboard-colors';
 import { drawRadialScores } from '../webgpu/dartboard-labels';
 import weightedGrid from 'bundle-text:../weighted-grid.wgsl';
+import segmentProbabilitiesShader from 'bundle-text:../segment-probabilities.wgsl';
 
 interface ScoreDistributionProps {
   showDartboardColors?: boolean;
   targetPosition?: { x: number; y: number };
   onTargetPositionChange?: (position: { x: number; y: number }) => void;
   gaussianStddev?: number;
+}
+
+interface SegmentProbability {
+  segment: string;
+  score: number;
+  probability: number;
 }
 
 export const ScoreDistribution: React.FC<ScoreDistributionProps> = ({ 
@@ -23,6 +30,7 @@ export const ScoreDistribution: React.FC<ScoreDistributionProps> = ({
   const [isReady, setIsReady] = useState(false);
   const [canvasKey, setCanvasKey] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
+  const [segmentProbabilities, setSegmentProbabilities] = useState<SegmentProbability[]>([]);
 
   const runScoreDistribution = useCallback(async (canvas: HTMLCanvasElement) => {
     const device = await getDevice();
@@ -31,6 +39,169 @@ export const ScoreDistribution: React.FC<ScoreDistributionProps> = ({
       return;
     }
 
+    // First run segment probabilities to get the table data
+    const probModule = device.createShaderModule({
+      label: "segment probabilities module",
+      code: segmentProbabilitiesShader,
+    });
+
+    const probPipeline = device.createComputePipeline({
+      label: "segment probabilities pipeline",
+      layout: "auto",
+      compute: {
+        module: probModule,
+        entryPoint: "computeSegmentProbabilities",
+      },
+    });
+
+    const probInput = new Float32Array(width * width);
+    const segmentSums = new Uint32Array(63); // 20 singles + 20 triples + 20 doubles + bull + outer bull + miss
+
+    const probWorkBuffer = device.createBuffer({
+      label: "prob work buffer",
+      size: probInput.byteLength,
+      usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC | GPUBufferUsage.COPY_DST,
+    });
+    device.queue.writeBuffer(probWorkBuffer, 0, probInput);
+
+    const segmentBuffer = device.createBuffer({
+      label: "segment buffer",
+      size: segmentSums.byteLength,
+      usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC | GPUBufferUsage.COPY_DST,
+    });
+    device.queue.writeBuffer(segmentBuffer, 0, segmentSums);
+
+    const segmentResultBuffer = device.createBuffer({
+      label: "segment result buffer",
+      size: segmentSums.byteLength,
+      usage: GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST,
+    });
+
+    const probUniformData = new Float32Array([width, width, targetPosition.x, targetPosition.y]);
+    const probUniformBuffer = device.createBuffer({
+      size: probUniformData.byteLength,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+    });
+    device.queue.writeBuffer(probUniformBuffer, 0, probUniformData);
+
+    const sigmaData = new Float32Array([gaussianStddev, gaussianStddev]);
+    const sigmaBuffer = device.createBuffer({
+      size: Math.max(sigmaData.byteLength, 16),
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+    });
+    device.queue.writeBuffer(sigmaBuffer, 0, sigmaData);
+
+    const probBindGroup = device.createBindGroup({
+      label: "bindGroup for prob buffer",
+      layout: probPipeline.getBindGroupLayout(0),
+      entries: [
+        { binding: 0, resource: { buffer: probWorkBuffer } },
+        { binding: 1, resource: { buffer: probUniformBuffer } },
+        { binding: 2, resource: { buffer: segmentBuffer } },
+        { binding: 3, resource: { buffer: sigmaBuffer } },
+      ],
+    });
+
+    const probEncoder = device.createCommandEncoder({
+      label: "segment probabilities encoder",
+    });
+    const probPass = probEncoder.beginComputePass({
+      label: "segment probabilities compute pass",
+    });
+    probPass.setPipeline(probPipeline);
+    probPass.setBindGroup(0, probBindGroup);
+    probPass.dispatchWorkgroups(width, width);
+    probPass.end();
+
+    probEncoder.copyBufferToBuffer(segmentBuffer, 0, segmentResultBuffer, 0, segmentResultBuffer.size);
+
+    const probCommandBuffer = probEncoder.finish();
+    device.queue.submit([probCommandBuffer]);
+
+    await segmentResultBuffer.mapAsync(GPUMapMode.READ);
+    const segmentResultsRaw = new Uint32Array(segmentResultBuffer.getMappedRange().slice(0));
+    segmentResultBuffer.unmap();
+    
+    // Convert back from fixed-point integers to floats
+    const segmentResults = new Float32Array(segmentResultsRaw.length);
+    for (let i = 0; i < segmentResultsRaw.length; i++) {
+      segmentResults[i] = segmentResultsRaw[i] / 1000000.0;
+    }
+
+    // Process segment results and create probability table
+    const radialScores = [6, 13, 4, 18, 1, 20, 5, 12, 9, 14, 11, 8, 16, 7, 19, 3, 17, 2, 15, 10];
+    const probabilities: SegmentProbability[] = [];
+    
+    // Calculate total probability for normalization
+    const totalProbability = segmentResults.reduce((sum, val) => sum + val, 0);
+    
+    // Singles (0-19)
+    for (let i = 0; i < 20; i++) {
+      if (segmentResults[i] > 0) {
+        probabilities.push({
+          segment: `${radialScores[i]} (Single)`,
+          score: radialScores[i],
+          probability: segmentResults[i] / totalProbability
+        });
+      }
+    }
+    
+    // Triples (20-39) 
+    for (let i = 20; i < 40; i++) {
+      if (segmentResults[i] > 0) {
+        const scoreIndex = i - 20;
+        probabilities.push({
+          segment: `T${radialScores[scoreIndex]} (Triple)`,
+          score: radialScores[scoreIndex] * 3,
+          probability: segmentResults[i] / totalProbability
+        });
+      }
+    }
+    
+    // Doubles (40-59)
+    for (let i = 40; i < 60; i++) {
+      if (segmentResults[i] > 0) {
+        const scoreIndex = i - 40;
+        probabilities.push({
+          segment: `D${radialScores[scoreIndex]} (Double)`,
+          score: radialScores[scoreIndex] * 2,
+          probability: segmentResults[i] / totalProbability
+        });
+      }
+    }
+    
+    // Outer Bull (60)
+    if (segmentResults[60] > 0) {
+      probabilities.push({
+        segment: 'Outer Bull',
+        score: 25,
+        probability: segmentResults[60] / totalProbability
+      });
+    }
+    
+    // Bull (61)
+    if (segmentResults[61] > 0) {
+      probabilities.push({
+        segment: 'Bull',
+        score: 50,
+        probability: segmentResults[61] / totalProbability
+      });
+    }
+    
+    // Miss (62)
+    if (segmentResults[62] > 0) {
+      probabilities.push({
+        segment: 'Miss',
+        score: 0,
+        probability: segmentResults[62] / totalProbability
+      });
+    }
+    
+    // Sort by probability (highest first)
+    probabilities.sort((a, b) => b.probability - a.probability);
+    setSegmentProbabilities(probabilities);
+
+    // Now run the main score distribution visualization
     const module = device.createShaderModule({
       label: "score distribution module",
       code: weightedGrid,
@@ -197,6 +368,79 @@ export const ScoreDistribution: React.FC<ScoreDistributionProps> = ({
               canvasHeight={width}
             />
           )}
+        </div>
+      )}
+      
+      {segmentProbabilities.length > 0 && (
+        <div style={{ marginTop: '20px' }}>
+          <h3>Score Probabilities by Segment</h3>
+          <div style={{ 
+            maxHeight: '400px', 
+            overflowY: 'auto',
+            border: '1px solid #ddd',
+            borderRadius: '4px'
+          }}>
+            <table style={{ 
+              width: '100%', 
+              borderCollapse: 'collapse',
+              fontSize: '14px'
+            }}>
+              <thead>
+                <tr style={{ backgroundColor: '#f5f5f5', position: 'sticky', top: 0 }}>
+                  <th style={{ padding: '8px', textAlign: 'left', borderBottom: '1px solid #ddd' }}>
+                    Segment
+                  </th>
+                  <th style={{ padding: '8px', textAlign: 'right', borderBottom: '1px solid #ddd' }}>
+                    Score
+                  </th>
+                  <th style={{ padding: '8px', textAlign: 'right', borderBottom: '1px solid #ddd' }}>
+                    Probability
+                  </th>
+                  <th style={{ padding: '8px', textAlign: 'right', borderBottom: '1px solid #ddd' }}>
+                    %
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {segmentProbabilities.map((seg, index) => (
+                  <tr 
+                    key={`${seg.segment}-${index}`}
+                    style={{ 
+                      backgroundColor: index % 2 === 0 ? 'white' : '#f9f9f9',
+                      borderBottom: '1px solid #eee'
+                    }}
+                  >
+                    <td style={{ padding: '6px 8px' }}>{seg.segment}</td>
+                    <td style={{ padding: '6px 8px', textAlign: 'right', fontWeight: 'bold' }}>
+                      {seg.score}
+                    </td>
+                    <td style={{ padding: '6px 8px', textAlign: 'right', fontFamily: 'monospace' }}>
+                      {seg.probability.toFixed(6)}
+                    </td>
+                    <td style={{ padding: '6px 8px', textAlign: 'right' }}>
+                      {(seg.probability * 100).toFixed(2)}%
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <div style={{ 
+            marginTop: '10px', 
+            fontSize: '12px', 
+            color: '#666',
+            textAlign: 'center'
+          }}>
+            <div>
+              Expected Score: {segmentProbabilities.reduce((sum, seg) => sum + (seg.score * seg.probability), 0).toFixed(2)} points
+            </div>
+            <div style={{ marginTop: '4px' }}>
+              Total Probability: {segmentProbabilities.reduce((sum, seg) => sum + seg.probability, 0).toFixed(6)} 
+              <span style={{ color: segmentProbabilities.reduce((sum, seg) => sum + seg.probability, 0) > 0.999 ? '#28a745' : '#dc3545', marginLeft: '4px' }}>
+                ({(segmentProbabilities.reduce((sum, seg) => sum + seg.probability, 0) * 100).toFixed(2)}%)
+              </span>
+            </div>
+          </div>
         </div>
       )}
     </div>
