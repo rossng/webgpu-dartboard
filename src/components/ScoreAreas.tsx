@@ -26,8 +26,9 @@ const DARTBOARD_AREAS = [
 
 export const ScoreAreas: React.FC<ScoreAreasProps> = ({ showDartboardColors }) => {
   const [isReady, setIsReady] = useState(false);
-  const [selectedArea, setSelectedArea] = useState('none');
+  const [selectedArea, setSelectedArea] = useState('bull');
   const [canvasKey, setCanvasKey] = useState(0);
+  const [pixelCount, setPixelCount] = useState<number | null>(null);
 
   const runScoreAreas = useCallback(async (canvas: HTMLCanvasElement) => {
     const device = await getDevice();
@@ -120,6 +121,10 @@ export const ScoreAreas: React.FC<ScoreAreasProps> = ({ showDartboardColors }) =
     const result = new Float32Array(resultBuffer.getMappedRange().slice(0));
     resultBuffer.unmap();
 
+    // Count pixels in selected area
+    const count = result.reduce((sum, value) => sum + (value > 0.5 ? 1 : 0), 0);
+    setPixelCount(count);
+
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
@@ -206,6 +211,23 @@ export const ScoreAreas: React.FC<ScoreAreasProps> = ({ showDartboardColors }) =
           ))}
         </select>
       </div>
+      
+      {pixelCount !== null && (
+        <div style={{ 
+          marginBottom: '20px', 
+          padding: '10px', 
+          backgroundColor: '#f0f0f0', 
+          borderRadius: '4px',
+          fontSize: '14px'
+        }}>
+          <strong>Selected Area:</strong> {pixelCount.toLocaleString()} pixels
+          {selectedArea !== 'none' && (
+            <span style={{ color: '#666', marginLeft: '10px' }}>
+              ({((pixelCount / (width * width)) * 100).toFixed(2)}% of total area)
+            </span>
+          )}
+        </div>
+      )}
       
       {isReady && (
         <CanvasVisualization
