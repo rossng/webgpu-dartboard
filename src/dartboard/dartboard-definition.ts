@@ -4,8 +4,10 @@ interface DartboardDef {
   bullDiameter: number;
   tripleRingWidth: number;
   doubleRingWidth: number;
-  centerToOuterTriple: number; // Inner ring
-  centerToOuterDouble: number; // Outer ring
+  /** Radius of the outer edge of the triple (inner) ring */
+  centerToOuterTriple: number;
+  /** Radius of the outer edge of the double (outer) ring */
+  centerToOuterDouble: number;
   radialScores: number[];
 }
 
@@ -37,10 +39,10 @@ export function normaliseDartboard(dartboard: DartboardDef) {
 /** Get the score on a dartboard from normalised coordinates */
 function getScore(x: number, y: number, dartboard: DartboardDef) {
   const r = Math.sqrt(x * x + y * y);
-  if (r < dartboard.doubleBullDiameter) {
+  if (r < dartboard.doubleBullDiameter / 2) {
     return 50;
   }
-  if (r < dartboard.bullDiameter) {
+  if (r < dartboard.bullDiameter / 2) {
     return 25;
   }
   const theta = Math.atan2(y, x) + Math.PI;

@@ -1,37 +1,4 @@
-interface DartboardDef {
-  wholeBoardDiameter: number;
-  doubleBullDiameter: number;
-  bullDiameter: number;
-  tripleRingWidth: number;
-  doubleRingWidth: number;
-  centerToOuterTriple: number; // Inner ring
-  centerToOuterDouble: number; // Outer ring
-  radialScores: number[];
-}
-
-const REGULATION_BOARD = {
-  wholeBoardDiameter: 451,
-  doubleBullDiameter: 12.7,
-  bullDiameter: 32,
-  tripleRingWidth: 8,
-  doubleRingWidth: 8,
-  centerToOuterTriple: 107,
-  centerToOuterDouble: 170,
-  radialScores: [6, 13, 4, 18, 1, 20, 5, 12, 9, 14, 11, 8, 16, 7, 19, 3, 17, 2, 15, 10],
-};
-
-function normaliseDartboard(dartboard: DartboardDef) {
-  return {
-    wholeBoardDiameter: 2,
-    doubleBullDiameter: (dartboard.doubleBullDiameter / dartboard.wholeBoardDiameter) * 2,
-    bullDiameter: (dartboard.bullDiameter / dartboard.wholeBoardDiameter) * 2,
-    tripleRingWidth: (dartboard.tripleRingWidth / dartboard.wholeBoardDiameter) * 2,
-    doubleRingWidth: (dartboard.doubleRingWidth / dartboard.wholeBoardDiameter) * 2,
-    centerToOuterTriple: (dartboard.centerToOuterTriple / dartboard.wholeBoardDiameter) * 2,
-    centerToOuterDouble: (dartboard.centerToOuterDouble / dartboard.wholeBoardDiameter) * 2,
-    radialScores: [...dartboard.radialScores],
-  };
-}
+import { REGULATION_BOARD, normaliseDartboard } from './dartboard-definition';
 
 export interface DartboardColor {
   r: number;
@@ -45,12 +12,12 @@ export function getDartboardColor(x: number, y: number): DartboardColor {
   const r = Math.sqrt(x * x + y * y);
 
   // Double bull (red center)
-  if (r < dartboard.doubleBullDiameter) {
+  if (r < dartboard.doubleBullDiameter / 2) {
     return { r: 255, g: 0, b: 0 }; // Red
   }
 
   // Bull (green)
-  if (r < dartboard.bullDiameter) {
+  if (r < dartboard.bullDiameter / 2) {
     return { r: 0, g: 128, b: 0 }; // Green
   }
 

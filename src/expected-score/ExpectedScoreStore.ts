@@ -153,11 +153,9 @@ export class ExpectedScoreStore {
       this.device.queue.submit([commandBuffer]);
 
       const start = Date.now();
-      console.log("start compute expected score");
       await resultBuffer.mapAsync(GPUMapMode.READ);
 
       const result = new Float32Array(resultBuffer.getMappedRange().slice(0));
-      console.log("finish compute expected score", (Date.now() - start) / 1000);
 
       resultBuffer.unmap();
 
