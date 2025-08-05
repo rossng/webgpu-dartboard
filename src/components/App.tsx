@@ -2,14 +2,12 @@ import React, { useState } from "react";
 import { Dartboard } from "../dartboard/Dartboard";
 import { ExpectedScore } from "../expected-score/ExpectedScore";
 import { HitDistribution } from "../hit-distribution/HitDistribution";
-import { ScoreAreas } from "../score-areas/ScoreAreas";
 import { ScoreDistribution } from "../score-distribution/ScoreDistribution";
 
 type TabName =
   | "hit-distribution"
   | "score-distribution"
   | "dartboard"
-  | "score-areas"
   | "expected-score";
 
 interface Tab {
@@ -20,7 +18,6 @@ interface Tab {
 
 const tabs: Tab[] = [
   { id: "dartboard", label: "Dartboard", component: Dartboard },
-  { id: "score-areas", label: "Score Areas", component: ScoreAreas },
   { id: "hit-distribution", label: "Hit Distribution", component: HitDistribution },
   { id: "score-distribution", label: "Score Distribution", component: ScoreDistribution },
   { id: "expected-score", label: "Expected Score", component: ExpectedScore },

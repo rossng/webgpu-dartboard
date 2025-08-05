@@ -1,7 +1,10 @@
 import React, { useCallback, useEffect, useRef } from "react";
 import { CanvasVisualization } from "../common/CanvasVisualization";
+import { ViridisColorScale } from "../common/ViridisColorScale";
+import { getViridisColor } from "../webgpu/viridis";
 import { makeDartboard } from "./dartboard-definition";
 import { drawRadialScores } from "./dartboard-labels";
+import { ScoreAreas } from "./ScoreAreas";
 
 const WIDTH = 500;
 
@@ -21,10 +24,13 @@ export const Dartboard: React.FC = () => {
     const imageData = ctx.createImageData(WIDTH, WIDTH);
 
     for (let i = 0; i < dartboardData.current.length; i++) {
-      const intensity = (dartboardData.current[i] * 255) / 50;
-      imageData.data[i * 4 + 0] = intensity; // R
-      imageData.data[i * 4 + 1] = intensity; // G
-      imageData.data[i * 4 + 2] = intensity; // B
+      const score = dartboardData.current[i];
+      const normalizedScore = score / 60; // Normalize to 0-1 (60 is max score)
+      const color = getViridisColor(normalizedScore);
+
+      imageData.data[i * 4 + 0] = color.r; // R
+      imageData.data[i * 4 + 1] = color.g; // G
+      imageData.data[i * 4 + 2] = color.b; // B
       imageData.data[i * 4 + 3] = 255; // A, fully opaque
     }
 
@@ -41,16 +47,23 @@ export const Dartboard: React.FC = () => {
     <div>
       <h2>Dartboard</h2>
       <p>
-        A visual representation of the dartboard with different scoring regions. Brightness
-        corresponds to score value - triple 20 (60 points) appears brightest, followed by other
-        high-scoring areas.
+        A visual representation of the dartboard with different scoring regions. Higher scores are
+        shown in brighter yellow/green colors, lower scores in purple/blue.
       </p>
-      <CanvasVisualization
-        id="dartboard"
-        width={WIDTH}
-        height={WIDTH}
-        onCanvasReady={handleCanvasReady}
-      />
+      <div style={{ display: "flex", alignItems: "flex-start", gap: "20px" }}>
+        <CanvasVisualization
+          id="dartboard"
+          width={WIDTH}
+          height={WIDTH}
+          onCanvasReady={handleCanvasReady}
+        />
+        <ViridisColorScale height={WIDTH} min={0} max={60} style={{ marginTop: "0" }} />
+      </div>
+
+      <div style={{ marginTop: "40px" }}>
+        <h2>Explore Scoring Areas</h2>
+        <ScoreAreas />
+      </div>
     </div>
   );
 };

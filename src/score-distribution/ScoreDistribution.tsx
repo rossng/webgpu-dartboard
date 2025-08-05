@@ -357,7 +357,7 @@ export const ScoreDistribution: React.FC<ScoreDistributionProps> = () => {
   }, [showDartboardColors, targetPosition, gaussianStddev, isDragging]);
 
   return (
-    <div style={{ display: "flex" }}>
+    <div style={{ display: "flex", gap: "10px" }}>
       <div style={{ flex: 1 }}>
         <h2>Score Distribution</h2>
         <p>
@@ -366,22 +366,58 @@ export const ScoreDistribution: React.FC<ScoreDistributionProps> = () => {
         </p>
 
         {isReady && (
-          <div style={{ position: "relative", display: "inline-block" }}>
-            <CanvasVisualization
-              key={canvasKey}
-              id="score-distribution"
-              width={width}
-              height={width}
-              onCanvasReady={runScoreDistribution}
-            />
-            <TargetIndicator
-              targetPosition={targetPosition}
-              onTargetPositionChange={setTargetPosition}
-              onDragStart={() => setIsDragging(true)}
-              onDragEnd={() => setIsDragging(false)}
-              canvasWidth={width}
-              canvasHeight={width}
-            />
+          <div style={{ display: "flex", alignItems: "center" }}>
+            <div style={{ position: "relative", display: "inline-block" }}>
+              <CanvasVisualization
+                key={canvasKey}
+                id="score-distribution"
+                width={width}
+                height={width}
+                onCanvasReady={runScoreDistribution}
+              />
+              <TargetIndicator
+                targetPosition={targetPosition}
+                onTargetPositionChange={setTargetPosition}
+                onDragStart={() => setIsDragging(true)}
+                onDragEnd={() => setIsDragging(false)}
+                canvasWidth={width}
+                canvasHeight={width}
+              />
+            </div>
+            {segmentProbabilities.length > 0 && (
+              <div
+                style={{
+                  marginLeft: "40px",
+                  minWidth: "120px",
+                  display: "flex",
+                  flexDirection: "column",
+                  justifyContent: "center",
+                  height: width,
+                }}
+              >
+                <div
+                  style={{
+                    fontSize: "12px",
+                    color: "#666",
+                    marginBottom: "4px",
+                    textAlign: "left",
+                  }}
+                >
+                  Expected Score
+                </div>
+                <div
+                  style={{
+                    fontSize: "24px",
+                    fontWeight: "bold",
+                    textAlign: "left",
+                  }}
+                >
+                  {segmentProbabilities
+                    .reduce((sum, seg) => sum + seg.score * seg.probability, 0)
+                    .toFixed(2)}
+                </div>
+              </div>
+            )}
           </div>
         )}
 
@@ -462,30 +498,8 @@ export const ScoreDistribution: React.FC<ScoreDistributionProps> = () => {
               }}
             >
               <div>
-                Expected Score:{" "}
-                {segmentProbabilities
-                  .reduce((sum, seg) => sum + seg.score * seg.probability, 0)
-                  .toFixed(2)}{" "}
-                points
-              </div>
-              <div style={{ marginTop: "4px" }}>
                 Total Probability:{" "}
-                {segmentProbabilities.reduce((sum, seg) => sum + seg.probability, 0).toFixed(6)}
-                <span
-                  style={{
-                    color:
-                      segmentProbabilities.reduce((sum, seg) => sum + seg.probability, 0) > 0.999
-                        ? "#28a745"
-                        : "#dc3545",
-                    marginLeft: "4px",
-                  }}
-                >
-                  (
-                  {(
-                    segmentProbabilities.reduce((sum, seg) => sum + seg.probability, 0) * 100
-                  ).toFixed(2)}
-                  %)
-                </span>
+                {segmentProbabilities.reduce((sum, seg) => sum + seg.probability, 0).toFixed(2)}
               </div>
             </div>
           </div>

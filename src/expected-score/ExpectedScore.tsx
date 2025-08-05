@@ -19,7 +19,7 @@ import { GaussianDistributionControls } from "./GaussianDistributionControls";
 import { LoadingSpinner } from "../common/LoadingSpinner";
 import { TargetIndicator } from "./TargetIndicator";
 import { TargetPositionDisplay } from "./TargetPositionDisplay";
-import { ViridisColorScale } from "./ViridisColorScale";
+import { ViridisColorScale } from "../common/ViridisColorScale";
 
 interface ExpectedScoreProps {}
 
