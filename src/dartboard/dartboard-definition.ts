@@ -45,7 +45,7 @@ function getScore(x: number, y: number, dartboard: DartboardDef) {
   if (r < dartboard.bullDiameter / 2) {
     return 25;
   }
-  const theta = Math.atan2(y, x) + Math.PI;
+  const theta = Math.atan2(y, -x) + Math.PI;
   const adjustedTheta = (theta + Math.PI / 20) % (2 * Math.PI);
   const slice = (adjustedTheta / (2 * Math.PI)) * 20;
   const sliceIdx = Math.floor(slice);
