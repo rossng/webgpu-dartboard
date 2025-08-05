@@ -4,31 +4,32 @@ interface DartboardDef {
   bullDiameter: number;
   tripleRingWidth: number;
   doubleRingWidth: number;
-  centerToOuterDouble: number;
-  centerToOuterTriple: number;
+  centerToOuterTriple: number; // Inner ring
+  centerToOuterDouble: number; // Outer ring
   radialScores: number[];
 }
 
-const REGULATION_BOARD = {
+// Measurements in mm
+export const REGULATION_BOARD = {
   wholeBoardDiameter: 451,
   doubleBullDiameter: 12.7,
   bullDiameter: 32,
   tripleRingWidth: 8,
   doubleRingWidth: 8,
-  centerToOuterDouble: 107,
-  centerToOuterTriple: 170,
+  centerToOuterTriple: 107,
+  centerToOuterDouble: 170,
   radialScores: [6, 13, 4, 18, 1, 20, 5, 12, 9, 14, 11, 8, 16, 7, 19, 3, 17, 2, 15, 10],
 };
 
-function normaliseDartboard(dartboard: DartboardDef) {
+export function normaliseDartboard(dartboard: DartboardDef) {
   return {
     wholeBoardDiameter: 2,
     doubleBullDiameter: (dartboard.doubleBullDiameter / dartboard.wholeBoardDiameter) * 2,
     bullDiameter: (dartboard.bullDiameter / dartboard.wholeBoardDiameter) * 2,
     tripleRingWidth: (dartboard.tripleRingWidth / dartboard.wholeBoardDiameter) * 2,
     doubleRingWidth: (dartboard.doubleRingWidth / dartboard.wholeBoardDiameter) * 2,
-    centerToOuterDouble: (dartboard.centerToOuterDouble / dartboard.wholeBoardDiameter) * 2,
     centerToOuterTriple: (dartboard.centerToOuterTriple / dartboard.wholeBoardDiameter) * 2,
+    centerToOuterDouble: (dartboard.centerToOuterDouble / dartboard.wholeBoardDiameter) * 2,
     radialScores: [...dartboard.radialScores],
   };
 }
@@ -48,17 +49,17 @@ function getScore(x: number, y: number, dartboard: DartboardDef) {
   const sliceIdx = Math.floor(slice);
   const sliceScore = dartboard.radialScores[sliceIdx];
 
-  if (r < dartboard.centerToOuterDouble - dartboard.doubleRingWidth) {
-    return sliceScore;
-  }
-  if (r < dartboard.centerToOuterDouble) {
-    return sliceScore * 2;
-  }
   if (r < dartboard.centerToOuterTriple - dartboard.tripleRingWidth) {
     return sliceScore;
   }
   if (r < dartboard.centerToOuterTriple) {
     return sliceScore * 3;
+  }
+  if (r < dartboard.centerToOuterDouble - dartboard.doubleRingWidth) {
+    return sliceScore;
+  }
+  if (r < dartboard.centerToOuterDouble) {
+    return sliceScore * 2;
   }
   return 0;
 }
