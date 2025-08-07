@@ -1,5 +1,3 @@
-import segmentProbabilitiesShader from "../hit-distribution/segment-probabilities.wgsl?raw";
-import weightedGrid from "./weighted-grid.wgsl?raw";
 import React, { useCallback, useEffect, useState } from "react";
 import { CanvasVisualization } from "../common/CanvasVisualization";
 import { getDartboardColor } from "../dartboard/dartboard-colors";
@@ -8,8 +6,10 @@ import { drawRadialScores } from "../dartboard/dartboard-labels";
 import { GaussianDistributionControls } from "../expected-score/GaussianDistributionControls";
 import { TargetIndicator } from "../expected-score/TargetIndicator";
 import { TargetPositionDisplay } from "../expected-score/TargetPositionDisplay";
+import segmentProbabilitiesShader from "../hit-distribution/segment-probabilities.wgsl?raw";
 import { getDevice, width } from "../webgpu/util";
 import { getViridisColor } from "../webgpu/viridis";
+import weightedGrid from "./weighted-grid.wgsl?raw";
 
 interface ScoreDistributionProps {}
 
@@ -27,7 +27,6 @@ export const ScoreDistribution: React.FC<ScoreDistributionProps> = () => {
   const [showDartboardColors, setShowDartboardColors] = useState(false);
   const [targetPosition, setTargetPosition] = useState({ x: 0, y: 0 });
   const [gaussianStddev, setGaussianStddev] = useState(55); // ~50mm
-  const [continuousExpectedScore, setContinuousExpectedScore] = useState<number | null>(null);
 
   const runScoreDistribution = useCallback(
     async (canvas: HTMLCanvasElement) => {
@@ -295,39 +294,6 @@ export const ScoreDistribution: React.FC<ScoreDistributionProps> = () => {
       const result = new Float32Array(resultBuffer.getMappedRange().slice(0));
       resultBuffer.unmap();
 
-      // Calculate continuous expected score by summing over all pixels
-      // This matches the approach used in the Expected Score tab
-      let continuousTotalScore = 0;
-      let continuousTotalProbability = 0;
-      
-      const dartboard = makeDartboard(width);
-      
-      for (let i = 0; i < width * width; i++) {
-        const x = i % width;
-        const y = Math.floor(i / width);
-        
-        // Convert to normalized coordinates
-        const normX = (x / width) * 2 - 1;
-        const normY = (y / width) * 2 - 1;
-        
-        // Convert target position to pixel coordinates
-        const targetPixelX = (targetPosition.x + 1) * width * 0.5;
-        const targetPixelY = (targetPosition.y + 1) * width * 0.5;
-        
-        // Calculate Gaussian probability for this pixel
-        const dx = x - targetPixelX;
-        const dy = y - targetPixelY;
-        const prob = Math.exp(-(dx * dx + dy * dy) / (2 * gaussianStddev * gaussianStddev)) / 
-                    (2 * Math.PI * gaussianStddev * gaussianStddev);
-        
-        const score = dartboard[i];
-        continuousTotalScore += prob * score;
-        continuousTotalProbability += prob;
-      }
-      
-      const continuousExpected = continuousTotalProbability > 0 ? continuousTotalScore / continuousTotalProbability : 0;
-      setContinuousExpectedScore(continuousExpected);
-
       const ctx = canvas.getContext("2d");
       if (!ctx) return;
 
@@ -451,31 +417,6 @@ export const ScoreDistribution: React.FC<ScoreDistributionProps> = () => {
                     .reduce((sum, seg) => sum + seg.score * seg.probability, 0)
                     .toFixed(2)}
                 </div>
-                
-                {continuousExpectedScore !== null && (
-                  <>
-                    <div
-                      style={{
-                        fontSize: "12px",
-                        color: "#666",
-                        marginBottom: "4px",
-                        textAlign: "left",
-                      }}
-                    >
-                      Expected Score (Continuous)
-                    </div>
-                    <div
-                      style={{
-                        fontSize: "24px",
-                        fontWeight: "bold",
-                        textAlign: "left",
-                        color: "#0066cc",
-                      }}
-                    >
-                      {continuousExpectedScore.toFixed(2)}
-                    </div>
-                  </>
-                )}
               </div>
             )}
           </div>
