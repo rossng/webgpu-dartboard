@@ -1,4 +1,4 @@
-import segmentProbabilitiesShader from "bundle-text:./segment-probabilities.wgsl";
+import segmentProbabilitiesShader from "./segment-probabilities.wgsl?raw";
 import React, { useCallback, useEffect, useState } from "react";
 import { CanvasVisualization } from "../common/CanvasVisualization";
 import { getDartboardColor } from "../dartboard/dartboard-colors";

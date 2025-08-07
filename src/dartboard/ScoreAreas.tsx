@@ -1,4 +1,4 @@
-import scoreAreasShader from "bundle-text:./score-areas.wgsl";
+import scoreAreasShader from "./score-areas.wgsl?raw";
 import React, { useCallback, useEffect, useState } from "react";
 import { CanvasVisualization } from "../common/CanvasVisualization";
 import { getDevice, width } from "../webgpu/util";

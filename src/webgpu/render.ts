@@ -1,4 +1,4 @@
-import shader from "bundle-text:../render.wgsl";
+import shader from "../render.wgsl?raw";
 
 export async function renderBuffer(device: GPUDevice, buffer: GPUBuffer, canvas: HTMLCanvasElement) {
 

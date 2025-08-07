@@ -1,4 +1,4 @@
-import expected from "bundle-text:./expected.wgsl";
+import expected from "./expected.wgsl?raw";
 import { makeDartboard } from "../dartboard/dartboard-definition";
 import { drawRadialScores, drawSegmentBoundaries } from "../dartboard/dartboard-labels";
 import { getDevice, width } from "../webgpu/util";

@@ -1,5 +1,5 @@
-import segmentProbabilitiesShader from "bundle-text:../hit-distribution/segment-probabilities.wgsl";
-import weightedGrid from "bundle-text:./weighted-grid.wgsl";
+import segmentProbabilitiesShader from "../hit-distribution/segment-probabilities.wgsl?raw";
+import weightedGrid from "./weighted-grid.wgsl?raw";
 import React, { useCallback, useEffect, useState } from "react";
 import { CanvasVisualization } from "../common/CanvasVisualization";
 import { getDartboardColor } from "../dartboard/dartboard-colors";

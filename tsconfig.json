@@ -4,7 +4,11 @@
     "types": ["@webgpu/types"],
     "lib": ["dom", "esnext"],
     "jsx": "react-jsx",
-    "moduleResolution": "node",
-    "esModuleInterop": true
-  }
+    "moduleResolution": "bundler",
+    "module": "ESNext",
+    "esModuleInterop": true,
+    "allowImportingTsExtensions": true,
+    "noEmit": true
+  },
+  "include": ["src", "vite.config.ts", "vitest.config.ts"]
 }
