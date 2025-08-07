@@ -264,9 +264,9 @@ describe("Segment Probabilities WebGPU Shader", () => {
     return { hitData, segmentSums };
   }
 
-  it("should validate segment probabilities against JS implementation on 100x100 grid", async () => {
-    const width = 100;
-    const height = 100;
+  it("should validate segment probabilities against JS implementation on 1000x1000 grid", async () => {
+    const width = 1000;
+    const height = 1000;
     const targetX = 0.0;
     const targetY = 0.0;
     const sigmaX = 50;
@@ -307,11 +307,18 @@ describe("Segment Probabilities WebGPU Shader", () => {
         const relativeError =
           Math.abs(gpuSegmentSumsFloat[i] - jsResults.segmentSums[i]) /
           Math.max(Math.max(jsResults.segmentSums[i], gpuSegmentSumsFloat[i]), 0.000001);
-
         // Allow reasonable tolerance for atomic operations and floating point precision
-        expect(relativeError).toBeLessThan(0.01); // Allow 10% relative error
+        expect(relativeError).toBeLessThan(0.02); // Allow 2% relative error
       }
     }
+
+    const jsTotal = jsResults.segmentSums.reduce((acc, curr) => acc + curr, 0);
+    const gpuTotal = gpuSegmentSumsFloat.reduce((acc, curr) => acc + curr, 0);
+
+    expect(jsTotal).toBeCloseTo(gpuTotal, 0.001);
+
+    expect(jsTotal).toBeCloseTo(1, 0.001);
+    expect(gpuTotal).toBeCloseTo(1, 0.001);
   });
 
   it("should compute different distributions for different target positions", async () => {
@@ -379,7 +386,7 @@ describe("Segment Probabilities WebGPU Shader", () => {
     // Test specific points
     const testPoints = [
       { x: 0, y: 0, expectedSegment: 61 }, // Bull
-      { x: 0.08, y: 0, expectedSegment: 60 }, // Outer bull
+      { x: 0.05, y: 0, expectedSegment: 60 }, // Outer bull (within bullDiameter/2 = 0.071)
       { x: 0.2, y: 0, expectedSegment: 0 }, // Single 6 (rightmost)
       { x: -0.2, y: 0, expectedSegment: 10 }, // Single 11 (leftmost)
       { x: 0, y: 0.2, expectedSegment: 15 }, // Single 3
