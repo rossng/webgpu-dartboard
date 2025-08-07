@@ -54,6 +54,9 @@ importers:
       vitest:
         specifier: ^3.2.4
         version: 3.2.4(@types/node@20.19.9)(@vitest/ui@3.2.4)(happy-dom@18.0.1)
+      webgpu:
+        specifier: ^0.3.0
+        version: 0.3.0
 
 packages:
 
@@ -1347,6 +1350,9 @@ packages:
   weak-lru-cache@1.2.2:
     resolution: {integrity: sha512-DEAoo25RfSYMuTGc9vPJzZcZullwIqRDSI9LOy+fkCJPi6hykCnfKaXTuPBDuXAUcqHXyOgFtHNp/kB2FjYHbw==}
 
+  webgpu@0.3.0:
+    resolution: {integrity: sha512-oDhJlZFFwCxgkHpVVfJn1+S0qsEJSZX9eDCjQCswCkXF2FYklApU974DybGAdBQSpS32XXUtbo31i7HJSYCJow==}
+
   whatwg-mimetype@3.0.0:
     resolution: {integrity: sha512-nt+N2dzIutVRxARx1nghPKGv1xHikU7HKdfafKkLNLindmPU/ch3U31NOCGGA/dmPcmb1VlofO0vnKAcsm0o/Q==}
     engines: {node: '>=12'}
@@ -2555,6 +2561,10 @@ snapshots:
       - yaml
 
   weak-lru-cache@1.2.2: {}
+
+  webgpu@0.3.0:
+    dependencies:
+      '@webgpu/types': 0.1.64
 
   whatwg-mimetype@3.0.0: {}
 
