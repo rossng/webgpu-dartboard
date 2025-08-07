@@ -3,13 +3,22 @@
 @group(0) @binding(2) var<storage, read_write> segmentSums: array<atomic<u32>>; // Array to store sums for each segment
 @group(0) @binding(3) var<uniform> sigmas: vec2f; // x: sigmaX, y: sigmaY
 
-// Dartboard configuration (normalized coordinates)
-const DOUBLE_BULL_DIAMETER: f32 = 0.056372549;
-const BULL_DIAMETER: f32 = 0.141815638;
-const TRIPLE_RING_WIDTH: f32 = 0.035477308;
-const DOUBLE_RING_WIDTH: f32 = 0.035477308;
-const CENTER_TO_OUTER_TRIPLE: f32 = 0.474501108;
-const CENTER_TO_OUTER_DOUBLE: f32 = 0.753881279;
+// Dartboard configuration (measurements in mm, matching TypeScript REGULATION_BOARD)
+const WHOLE_BOARD_DIAMETER: f32 = 451.0;
+const DOUBLE_BULL_DIAMETER_MM: f32 = 12.7;
+const BULL_DIAMETER_MM: f32 = 32.0;
+const TRIPLE_RING_WIDTH_MM: f32 = 8.0;
+const DOUBLE_RING_WIDTH_MM: f32 = 8.0;
+const CENTER_TO_OUTER_TRIPLE_MM: f32 = 107.0;
+const CENTER_TO_OUTER_DOUBLE_MM: f32 = 170.0;
+
+// Computed normalized coordinates (diameter normalized to 2.0)
+const DOUBLE_BULL_DIAMETER: f32 = (DOUBLE_BULL_DIAMETER_MM / WHOLE_BOARD_DIAMETER) * 2.0;
+const BULL_DIAMETER: f32 = (BULL_DIAMETER_MM / WHOLE_BOARD_DIAMETER) * 2.0;
+const TRIPLE_RING_WIDTH: f32 = (TRIPLE_RING_WIDTH_MM / WHOLE_BOARD_DIAMETER) * 2.0;
+const DOUBLE_RING_WIDTH: f32 = (DOUBLE_RING_WIDTH_MM / WHOLE_BOARD_DIAMETER) * 2.0;
+const CENTER_TO_OUTER_TRIPLE: f32 = (CENTER_TO_OUTER_TRIPLE_MM / WHOLE_BOARD_DIAMETER) * 2.0;
+const CENTER_TO_OUTER_DOUBLE: f32 = (CENTER_TO_OUTER_DOUBLE_MM / WHOLE_BOARD_DIAMETER) * 2.0;
 
 // Function to get radial score by index (20 segments starting from rightmost, going clockwise)
 fn getRadialScore(index: i32) -> i32 {

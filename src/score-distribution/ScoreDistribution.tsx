@@ -27,6 +27,7 @@ export const ScoreDistribution: React.FC<ScoreDistributionProps> = () => {
   const [showDartboardColors, setShowDartboardColors] = useState(false);
   const [targetPosition, setTargetPosition] = useState({ x: 0, y: 0 });
   const [gaussianStddev, setGaussianStddev] = useState(55); // ~50mm
+  const [continuousExpectedScore, setContinuousExpectedScore] = useState<number | null>(null);
 
   const runScoreDistribution = useCallback(
     async (canvas: HTMLCanvasElement) => {
@@ -294,6 +295,39 @@ export const ScoreDistribution: React.FC<ScoreDistributionProps> = () => {
       const result = new Float32Array(resultBuffer.getMappedRange().slice(0));
       resultBuffer.unmap();
 
+      // Calculate continuous expected score by summing over all pixels
+      // This matches the approach used in the Expected Score tab
+      let continuousTotalScore = 0;
+      let continuousTotalProbability = 0;
+      
+      const dartboard = makeDartboard(width);
+      
+      for (let i = 0; i < width * width; i++) {
+        const x = i % width;
+        const y = Math.floor(i / width);
+        
+        // Convert to normalized coordinates
+        const normX = (x / width) * 2 - 1;
+        const normY = (y / width) * 2 - 1;
+        
+        // Convert target position to pixel coordinates
+        const targetPixelX = (targetPosition.x + 1) * width * 0.5;
+        const targetPixelY = (targetPosition.y + 1) * width * 0.5;
+        
+        // Calculate Gaussian probability for this pixel
+        const dx = x - targetPixelX;
+        const dy = y - targetPixelY;
+        const prob = Math.exp(-(dx * dx + dy * dy) / (2 * gaussianStddev * gaussianStddev)) / 
+                    (2 * Math.PI * gaussianStddev * gaussianStddev);
+        
+        const score = dartboard[i];
+        continuousTotalScore += prob * score;
+        continuousTotalProbability += prob;
+      }
+      
+      const continuousExpected = continuousTotalProbability > 0 ? continuousTotalScore / continuousTotalProbability : 0;
+      setContinuousExpectedScore(continuousExpected);
+
       const ctx = canvas.getContext("2d");
       if (!ctx) return;
 
@@ -388,7 +422,7 @@ export const ScoreDistribution: React.FC<ScoreDistributionProps> = () => {
               <div
                 style={{
                   marginLeft: "40px",
-                  minWidth: "120px",
+                  minWidth: "180px",
                   display: "flex",
                   flexDirection: "column",
                   justifyContent: "center",
@@ -403,19 +437,45 @@ export const ScoreDistribution: React.FC<ScoreDistributionProps> = () => {
                     textAlign: "left",
                   }}
                 >
-                  Expected Score
+                  Expected Score (Discrete)
                 </div>
                 <div
                   style={{
                     fontSize: "24px",
                     fontWeight: "bold",
                     textAlign: "left",
+                    marginBottom: "16px",
                   }}
                 >
                   {segmentProbabilities
                     .reduce((sum, seg) => sum + seg.score * seg.probability, 0)
                     .toFixed(2)}
                 </div>
+                
+                {continuousExpectedScore !== null && (
+                  <>
+                    <div
+                      style={{
+                        fontSize: "12px",
+                        color: "#666",
+                        marginBottom: "4px",
+                        textAlign: "left",
+                      }}
+                    >
+                      Expected Score (Continuous)
+                    </div>
+                    <div
+                      style={{
+                        fontSize: "24px",
+                        fontWeight: "bold",
+                        textAlign: "left",
+                        color: "#0066cc",
+                      }}
+                    >
+                      {continuousExpectedScore.toFixed(2)}
+                    </div>
+                  </>
+                )}
               </div>
             )}
           </div>
