@@ -1,10 +1,12 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef } from "react";
+import { REGULATION_BOARD, normaliseDartboard } from "../dartboard/dartboard-definition";
 
 interface GaussianDistributionControlsProps {
   gaussianStddevPixels: number;
   onGaussianStddevPixelsChange: (pixels: number) => void;
   onInteractionStart?: () => void;
   onInteractionEnd?: () => void;
+  canvasWidth?: number;
 }
 
 export const GaussianDistributionControls: React.FC<GaussianDistributionControlsProps> = ({
@@ -12,22 +14,21 @@ export const GaussianDistributionControls: React.FC<GaussianDistributionControls
   onGaussianStddevPixelsChange,
   onInteractionStart,
   onInteractionEnd,
+  canvasWidth = 1000,
 }) => {
-  // Convert pixels to millimeters:
-  // - Canvas is 500px representing -1 to +1 normalized coords (2 units total)
-  // - So 250px = 1 normalized unit
-  // - CENTER_TO_OUTER_DOUBLE (0.753881279 normalized) = 170mm real dartboard
-  // - So 1 normalized unit = 170mm / 0.753881279 = 225.5mm
-  // - Therefore 250px = 225.5mm, so 1px = 0.902mm
-  const pixelToMm = 170 / (0.753881279 * 250); // ≈ 0.902 mm/pixel
-  const mmToPixel = 1 / pixelToMm; // ≈ 1.109 pixels/mm
-  
+  const normalizedDartboard = normaliseDartboard(REGULATION_BOARD);
+  const centerToOuterDoubleNormalized = normalizedDartboard.centerToOuterDouble;
+  const centerToOuterDoubleMm = REGULATION_BOARD.centerToOuterDouble;
+
+  const pixelToMm = centerToOuterDoubleMm / (centerToOuterDoubleNormalized * (canvasWidth / 2));
+  const mmToPixel = 1 / pixelToMm;
+
   // Current value in mm
   const gaussianStddevMm = gaussianStddevPixels * pixelToMm;
-  
+
   // Track interaction state
   const isDraggingRef = useRef(false);
-  
+
   // Handle slider change - convert mm to pixels
   const handleSliderChange = (mmValue: number) => {
     const pixelValue = mmValue * mmToPixel;
@@ -45,13 +46,13 @@ export const GaussianDistributionControls: React.FC<GaussianDistributionControls
         if (isDraggingRef.current) {
           isDraggingRef.current = false;
           onInteractionEnd?.();
-          document.removeEventListener('mouseup', handleMouseUp);
-          document.removeEventListener('touchend', handleMouseUp);
+          document.removeEventListener("mouseup", handleMouseUp);
+          document.removeEventListener("touchend", handleMouseUp);
         }
       };
 
-      document.addEventListener('mouseup', handleMouseUp);
-      document.addEventListener('touchend', handleMouseUp);
+      document.addEventListener("mouseup", handleMouseUp);
+      document.addEventListener("touchend", handleMouseUp);
     }
   };
 
@@ -107,8 +108,8 @@ export const GaussianDistributionControls: React.FC<GaussianDistributionControls
       </div>
       <p style={{ fontSize: "12px", color: "#888" }}>
         Controls the spread of the Gaussian distribution. Lower values mean more precise throws,
-        higher values mean more scattered throws. Based on regulation dartboard dimensions
-        (170mm to outer double ring).
+        higher values mean more scattered throws. Based on regulation dartboard dimensions (
+        {REGULATION_BOARD.centerToOuterDouble}mm to outer double ring).
       </p>
     </div>
   );

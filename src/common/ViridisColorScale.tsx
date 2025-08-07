@@ -54,7 +54,8 @@ export const ViridisColorScale: React.FC<ViridisColorScaleProps> = ({
         display: "flex",
         alignItems: "center",
         position: "relative",
-        height,
+        maxHeight: '90vh',
+        height: 'auto',
         ...style,
       }}
     >
@@ -62,7 +63,12 @@ export const ViridisColorScale: React.FC<ViridisColorScaleProps> = ({
         ref={canvasRef}
         width={width}
         height={height}
-        style={{ border: "1px solid #ddd" }}
+        style={{ 
+          border: "1px solid #ddd",
+          maxHeight: '90vh',
+          width: 'auto',
+          height: 'auto'
+        }}
       />
       <div
         style={{

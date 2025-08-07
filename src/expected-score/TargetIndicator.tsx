@@ -24,9 +24,10 @@ export const TargetIndicator: React.FC<TargetIndicatorProps> = ({
   // Use drag position during dragging, target position otherwise
   const currentPosition = isDragging.current ? dragPosition : targetPosition;
   
-  // Convert normalized coordinates to pixel coordinates
-  const pixelX = (currentPosition.x + 1) * canvasWidth * 0.5;
-  const pixelY = (currentPosition.y + 1) * canvasHeight * 0.5;
+  // Convert normalized coordinates to display pixel coordinates
+  // Note: We use 100% width/height and let CSS handle scaling
+  const pixelX = (currentPosition.x + 1) * 50; // 50% = center
+  const pixelY = (currentPosition.y + 1) * 50; // 50% = center
 
   const debouncedUpdate = useCallback((position: { x: number; y: number }) => {
     if (updateTimeoutRef.current) {
@@ -52,8 +53,9 @@ export const TargetIndicator: React.FC<TargetIndicatorProps> = ({
     const y = e.clientY - rect.top;
 
     // Convert pixel coordinates to normalized coordinates (-1 to 1)
-    const normalizedX = (x / canvasWidth) * 2 - 1;
-    const normalizedY = (y / canvasHeight) * 2 - 1;
+    // Use actual displayed size from getBoundingClientRect
+    const normalizedX = (x / rect.width) * 2 - 1;
+    const normalizedY = (y / rect.height) * 2 - 1;
 
     // Clamp to dartboard bounds
     const clampedX = Math.max(-1, Math.min(1, normalizedX));
@@ -62,7 +64,7 @@ export const TargetIndicator: React.FC<TargetIndicatorProps> = ({
     const newPosition = { x: clampedX, y: clampedY };
     setDragPosition(newPosition);
     debouncedUpdate(newPosition);
-  }, [canvasWidth, canvasHeight, debouncedUpdate]);
+  }, [debouncedUpdate]);
 
   const handleMouseUp = useCallback(() => {
     if (isDragging.current) {
@@ -82,15 +84,16 @@ export const TargetIndicator: React.FC<TargetIndicatorProps> = ({
     const y = e.clientY - rect.top;
 
     // Convert pixel coordinates to normalized coordinates (-1 to 1)
-    const normalizedX = (x / canvasWidth) * 2 - 1;
-    const normalizedY = (y / canvasHeight) * 2 - 1;
+    // Use actual displayed size from getBoundingClientRect
+    const normalizedX = (x / rect.width) * 2 - 1;
+    const normalizedY = (y / rect.height) * 2 - 1;
 
     // Clamp to dartboard bounds
     const clampedX = Math.max(-1, Math.min(1, normalizedX));
     const clampedY = Math.max(-1, Math.min(1, normalizedY));
 
     onTargetPositionChange({ x: clampedX, y: clampedY });
-  }, [canvasWidth, canvasHeight, onTargetPositionChange]);
+  }, [onTargetPositionChange]);
 
   return (
     <div
@@ -98,8 +101,8 @@ export const TargetIndicator: React.FC<TargetIndicatorProps> = ({
         position: 'absolute',
         top: 0,
         left: 0,
-        width: canvasWidth,
-        height: canvasHeight,
+        width: '100%',
+        height: '100%',
         cursor: 'crosshair',
         pointerEvents: 'all',
       }}
@@ -113,8 +116,8 @@ export const TargetIndicator: React.FC<TargetIndicatorProps> = ({
       <div
         style={{
           position: 'absolute',
-          left: pixelX - 10,
-          top: pixelY - 10,
+          left: `calc(${pixelX}% - 10px)`,
+          top: `calc(${pixelY}% - 10px)`,
           width: 20,
           height: 20,
           pointerEvents: 'none',

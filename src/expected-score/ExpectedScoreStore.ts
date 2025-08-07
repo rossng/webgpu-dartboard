@@ -1,7 +1,9 @@
 import expected from "./expected.wgsl?raw";
 import { makeDartboard } from "../dartboard/dartboard-definition";
 import { drawRadialScores, drawSegmentBoundaries } from "../dartboard/dartboard-labels";
-import { getDevice, width } from "../webgpu/util";
+import { getDevice } from "../webgpu/util";
+
+const EXPECTED_SCORE_CANVAS_SIZE = 500;
 import { getViridisColor } from "../webgpu/viridis";
 
 export interface ExpectedScoreState {
@@ -96,7 +98,7 @@ export class ExpectedScoreStore {
         },
       });
 
-      const input = new Float32Array(width * width);
+      const input = new Float32Array(EXPECTED_SCORE_CANVAS_SIZE * EXPECTED_SCORE_CANVAS_SIZE);
 
       const workBuffer = this.device.createBuffer({
         label: "work buffer",
@@ -111,14 +113,14 @@ export class ExpectedScoreStore {
         usage: GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST,
       });
 
-      const uniformData = new Float32Array([width, width, gaussianStddev, gaussianStddev]);
+      const uniformData = new Float32Array([EXPECTED_SCORE_CANVAS_SIZE, EXPECTED_SCORE_CANVAS_SIZE, gaussianStddev, gaussianStddev]);
       const uniformBuffer = this.device.createBuffer({
         size: uniformData.byteLength,
         usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
       });
       this.device.queue.writeBuffer(uniformBuffer, 0, uniformData);
 
-      const dartboardScore = makeDartboard(width);
+      const dartboardScore = makeDartboard(EXPECTED_SCORE_CANVAS_SIZE);
       const dartboardBuffer = this.device.createBuffer({
         label: "dartboard buffer",
         size: dartboardScore.byteLength,
@@ -152,7 +154,6 @@ export class ExpectedScoreStore {
       const commandBuffer = encoder.finish();
       this.device.queue.submit([commandBuffer]);
 
-      const start = Date.now();
       await resultBuffer.mapAsync(GPUMapMode.READ);
 
       const result = new Float32Array(resultBuffer.getMappedRange().slice(0));
@@ -164,12 +165,12 @@ export class ExpectedScoreStore {
 
       // Find the position of the highest score
       const maxIndex = result.indexOf(max);
-      const maxY = Math.floor(maxIndex / width);
-      const maxX = maxIndex % width;
+      const maxY = Math.floor(maxIndex / EXPECTED_SCORE_CANVAS_SIZE);
+      const maxX = maxIndex % EXPECTED_SCORE_CANVAS_SIZE;
 
       // Convert pixel coordinates to normalized coordinates (-1 to 1)
-      const normalizedX = (maxX / width) * 2 - 1;
-      const normalizedY = (maxY / width) * 2 - 1;
+      const normalizedX = (maxX / EXPECTED_SCORE_CANVAS_SIZE) * 2 - 1;
+      const normalizedY = (maxY / EXPECTED_SCORE_CANVAS_SIZE) * 2 - 1;
       const highestScorePosition = { x: normalizedX, y: normalizedY };
 
       // Update state
@@ -196,7 +197,7 @@ export class ExpectedScoreStore {
     const ctx = canvas.getContext("2d");
     if (!ctx || !resultData) return;
 
-    const imageData = ctx.createImageData(width, width);
+    const imageData = ctx.createImageData(EXPECTED_SCORE_CANVAS_SIZE, EXPECTED_SCORE_CANVAS_SIZE);
     const { min, max } = expectedScoreRange;
 
     // Apply viridis color map
@@ -214,15 +215,15 @@ export class ExpectedScoreStore {
 
     // Draw segment boundaries if enabled
     if (displayOptions.showSegmentBoundaries) {
-      const centerX = width / 2;
-      const centerY = width / 2;
-      drawSegmentBoundaries(ctx, centerX, centerY, width, 0.3);
+      const centerX = EXPECTED_SCORE_CANVAS_SIZE / 2;
+      const centerY = EXPECTED_SCORE_CANVAS_SIZE / 2;
+      drawSegmentBoundaries(ctx, centerX, centerY, EXPECTED_SCORE_CANVAS_SIZE, 0.3);
     }
 
     // Draw red dot at highest score position if enabled
     if (displayOptions.showHighestScore && highestScorePosition) {
-      const dotX = (highestScorePosition.x + 1) * width * 0.5;
-      const dotY = (highestScorePosition.y + 1) * width * 0.5;
+      const dotX = (highestScorePosition.x + 1) * EXPECTED_SCORE_CANVAS_SIZE * 0.5;
+      const dotY = (highestScorePosition.y + 1) * EXPECTED_SCORE_CANVAS_SIZE * 0.5;
 
       ctx.fillStyle = "red";
       ctx.beginPath();
@@ -236,9 +237,9 @@ export class ExpectedScoreStore {
     }
 
     // Draw radial scores around the dartboard
-    const centerX = width / 2;
-    const centerY = width / 2;
-    const labelRadius = width * 0.45; // Place labels outside the dartboard
+    const centerX = EXPECTED_SCORE_CANVAS_SIZE / 2;
+    const centerY = EXPECTED_SCORE_CANVAS_SIZE / 2;
+    const labelRadius = EXPECTED_SCORE_CANVAS_SIZE * 0.45; // Place labels outside the dartboard
     drawRadialScores(ctx, centerX, centerY, labelRadius, 14, "#fff");
   }
 
@@ -248,12 +249,12 @@ export class ExpectedScoreStore {
   ): number | null {
     if (!resultData) return null;
 
-    // Convert normalized coordinates (-1 to 1) to pixel coordinates (0 to width)
-    const x = Math.floor((targetPosition.x + 1) * width * 0.5);
-    const y = Math.floor((targetPosition.y + 1) * width * 0.5);
+    // Convert normalized coordinates (-1 to 1) to pixel coordinates (0 to EXPECTED_SCORE_CANVAS_SIZE)
+    const x = Math.floor((targetPosition.x + 1) * EXPECTED_SCORE_CANVAS_SIZE * 0.5);
+    const y = Math.floor((targetPosition.y + 1) * EXPECTED_SCORE_CANVAS_SIZE * 0.5);
 
-    if (x >= 0 && x < width && y >= 0 && y < width) {
-      const index = y * width + x;
+    if (x >= 0 && x < EXPECTED_SCORE_CANVAS_SIZE && y >= 0 && y < EXPECTED_SCORE_CANVAS_SIZE) {
+      const index = y * EXPECTED_SCORE_CANVAS_SIZE + x;
       return resultData[index];
     }
 

@@ -1,5 +1,8 @@
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
 import React, { useCallback, useEffect, useRef } from "react";
+import { CanvasVisualization } from "../common/CanvasVisualization";
+import { LoadingSpinner } from "../common/LoadingSpinner";
+import { ViridisColorScale } from "../common/ViridisColorScale";
 import {
   cleanupStoreAtom,
   computeExpectedScoreAtom,
@@ -13,13 +16,11 @@ import {
   renderToCanvasAtom,
   targetPositionAtom,
 } from "./expectedScoreAtoms";
-import { width } from "../webgpu/util";
-import { CanvasVisualization } from "../common/CanvasVisualization";
 import { GaussianDistributionControls } from "./GaussianDistributionControls";
-import { LoadingSpinner } from "../common/LoadingSpinner";
 import { TargetIndicator } from "./TargetIndicator";
 import { TargetPositionDisplay } from "./TargetPositionDisplay";
-import { ViridisColorScale } from "../common/ViridisColorScale";
+
+const EXPECTED_SCORE_CANVAS_SIZE = 500;
 
 interface ExpectedScoreProps {}
 
@@ -31,7 +32,7 @@ export const ExpectedScore: React.FC<ExpectedScoreProps> = () => {
   const [targetPosition, setTargetPosition] = useAtom(targetPositionAtom);
   const [displayOptions, setDisplayOptions] = useAtom(displayOptionsAtom);
   const [isUserInteracting, setIsUserInteracting] = useAtom(isUserInteractingAtom);
-  
+
   // Action atoms
   const initializeStore = useSetAtom(initializeStoreAtom);
   const computeExpectedScore = useSetAtom(computeExpectedScoreAtom);
@@ -51,7 +52,12 @@ export const ExpectedScore: React.FC<ExpectedScoreProps> = () => {
   useEffect(() => {
     if (!canvasRef.current || isUserInteracting) return;
     computeExpectedScore();
-  }, [displayOptions.showSegmentBoundaries, displayOptions.showHighestScore, isUserInteracting, computeExpectedScore]);
+  }, [
+    displayOptions.showSegmentBoundaries,
+    displayOptions.showHighestScore,
+    isUserInteracting,
+    computeExpectedScore,
+  ]);
 
   // Trigger debounced computation when gaussian changes
   useEffect(() => {
@@ -75,9 +81,12 @@ export const ExpectedScore: React.FC<ExpectedScoreProps> = () => {
   );
 
   // Handle gaussian slider interactions
-  const handleGaussianChange = useCallback((value: number) => {
-    setGaussianStddev(value);
-  }, [setGaussianStddev]);
+  const handleGaussianChange = useCallback(
+    (value: number) => {
+      setGaussianStddev(value);
+    },
+    [setGaussianStddev],
+  );
 
   const handleGaussianInteractionStart = useCallback(() => {
     setIsUserInteracting(true);
@@ -88,10 +97,12 @@ export const ExpectedScore: React.FC<ExpectedScoreProps> = () => {
   }, [setIsUserInteracting]);
 
   // Handle target position changes
-  const handleTargetPositionChange = useCallback((position: { x: number; y: number }) => {
-    setTargetPosition(position);
-  }, [setTargetPosition]);
-
+  const handleTargetPositionChange = useCallback(
+    (position: { x: number; y: number }) => {
+      setTargetPosition(position);
+    },
+    [setTargetPosition],
+  );
 
   return (
     <div style={{ display: "flex" }}>
@@ -108,8 +119,8 @@ export const ExpectedScore: React.FC<ExpectedScoreProps> = () => {
               {state.isComputing && <LoadingSpinner />}
               <CanvasVisualization
                 id="expected-score"
-                width={width}
-                height={width}
+                width={EXPECTED_SCORE_CANVAS_SIZE}
+                height={EXPECTED_SCORE_CANVAS_SIZE}
                 onCanvasReady={handleCanvasReady}
               />
               <TargetIndicator
@@ -121,12 +132,12 @@ export const ExpectedScore: React.FC<ExpectedScoreProps> = () => {
                 onDragEnd={() => {
                   setIsUserInteracting(false);
                 }}
-                canvasWidth={width}
-                canvasHeight={width}
+                canvasWidth={EXPECTED_SCORE_CANVAS_SIZE}
+                canvasHeight={EXPECTED_SCORE_CANVAS_SIZE}
               />
             </div>
             <ViridisColorScale
-              height={width}
+              height={EXPECTED_SCORE_CANVAS_SIZE}
               min={state.expectedScoreRange.min}
               max={state.expectedScoreRange.max}
               style={{ marginLeft: "20px" }}
@@ -140,7 +151,7 @@ export const ExpectedScore: React.FC<ExpectedScoreProps> = () => {
                   minWidth: "120px",
                   display: "flex",
                   alignItems: "center",
-                  height: width,
+                  height: EXPECTED_SCORE_CANVAS_SIZE,
                 }}
               >
                 {expectedScoreAtTarget.toFixed(2)}
@@ -167,8 +178,8 @@ export const ExpectedScore: React.FC<ExpectedScoreProps> = () => {
             <input
               type="checkbox"
               checked={displayOptions.showSegmentBoundaries}
-              onChange={(e) => 
-                setDisplayOptions(prev => ({ ...prev, showSegmentBoundaries: e.target.checked }))
+              onChange={(e) =>
+                setDisplayOptions((prev) => ({ ...prev, showSegmentBoundaries: e.target.checked }))
               }
               style={{ marginRight: "8px" }}
             />
@@ -184,8 +195,8 @@ export const ExpectedScore: React.FC<ExpectedScoreProps> = () => {
             <input
               type="checkbox"
               checked={displayOptions.showHighestScore}
-              onChange={(e) => 
-                setDisplayOptions(prev => ({ ...prev, showHighestScore: e.target.checked }))
+              onChange={(e) =>
+                setDisplayOptions((prev) => ({ ...prev, showHighestScore: e.target.checked }))
               }
               style={{ marginRight: "8px" }}
             />
@@ -201,6 +212,7 @@ export const ExpectedScore: React.FC<ExpectedScoreProps> = () => {
           onGaussianStddevPixelsChange={handleGaussianChange}
           onInteractionStart={handleGaussianInteractionStart}
           onInteractionEnd={handleGaussianInteractionEnd}
+          canvasWidth={EXPECTED_SCORE_CANVAS_SIZE}
         />
 
         <TargetPositionDisplay

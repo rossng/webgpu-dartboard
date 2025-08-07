@@ -21,13 +21,24 @@ export const CanvasVisualization: React.FC<CanvasVisualizationProps> = ({
     }
   }, [onCanvasReady]);
 
+  // Calculate display size to be max 90% of viewport height while maintaining aspect ratio
+  const aspectRatio = width / height;
+  const maxDisplayHeight = '90vh';
+  const maxDisplayWidth = aspectRatio === 1 ? maxDisplayHeight : `calc(${maxDisplayHeight} * ${aspectRatio})`;
+
   return (
     <canvas
       ref={canvasRef}
       id={id}
       width={width}
       height={height}
-      style={{ imageRendering: 'pixelated' }}
+      style={{ 
+        imageRendering: 'pixelated',
+        maxHeight: maxDisplayHeight,
+        maxWidth: maxDisplayWidth,
+        width: 'auto',
+        height: 'auto'
+      }}
     />
   );
 };

@@ -6,7 +6,7 @@ import { makeDartboard } from "./dartboard-definition";
 import { drawRadialScores } from "./dartboard-labels";
 import { ScoreAreas } from "./ScoreAreas";
 
-const WIDTH = 500;
+const WIDTH = 1000;
 
 export const Dartboard: React.FC = () => {
   const dartboardData = useRef<Uint32Array | null>(null);

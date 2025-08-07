@@ -3,7 +3,7 @@ export function fail(msg: string) {
   alert(msg);
 }
 
-export const width = 500;
+export const width = 1000;
 
 export async function getDevice() {
   const adapter = await navigator.gpu?.requestAdapter();
