@@ -295,10 +295,10 @@ describe("Segment Probabilities WebGPU Shader", () => {
       expect(gpuResults.hitData[randomIdx]).toBeCloseTo(jsResults.hitData[randomIdx], 5);
     }
 
-    // Convert GPU segment sums from fixed-point to float (divided by 1000000)
+    // Convert GPU segment sums from optimal precision fixed-point to float (divided by 500M)
     const gpuSegmentSumsFloat = new Float32Array(gpuResults.segmentSums.length);
     for (let i = 0; i < gpuResults.segmentSums.length; i++) {
-      gpuSegmentSumsFloat[i] = gpuResults.segmentSums[i] / 1000000.0;
+      gpuSegmentSumsFloat[i] = gpuResults.segmentSums[i] / 500000000.0;
     }
 
     // Validate segment sums match (with some tolerance for atomic operations and floating point)
@@ -337,10 +337,10 @@ describe("Segment Probabilities WebGPU Shader", () => {
         sigmaY,
       );
 
-      // Convert from fixed-point
+      // Convert from high precision fixed-point
       const segmentSumsFloat = new Float32Array(result.segmentSums.length);
       for (let i = 0; i < result.segmentSums.length; i++) {
-        segmentSumsFloat[i] = result.segmentSums[i] / 1000000.0;
+        segmentSumsFloat[i] = result.segmentSums[i] / 500000000.0;
       }
 
       // Ensure we have valid probabilities

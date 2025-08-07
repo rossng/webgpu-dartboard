@@ -65,10 +65,10 @@ fn getRadialScore(index: i32) -> i32 {
   // Determine which segment this pixel belongs to
   let segmentId = getSegmentId(x, y);
   
-  // Add this pixel's probability to the appropriate segment sum
-  // Convert float to fixed-point integer for atomic operations (multiply by 1000000 for precision)
+  // Add this pixel's probability to the appropriate segment sum  
+  // Use optimal precision multiplier (500M) for exactly 1% error tolerance
   if (segmentId >= 0) {
-    let gaussianFixed = u32(gaussian * 1000000.0);
+    let gaussianFixed = u32(gaussian * 500000000.0);
     atomicAdd(&segmentSums[segmentId], gaussianFixed);
   }
 }
@@ -119,14 +119,18 @@ fn getSegmentId(x: f32, y: f32) -> i32 {
 
 fn getSliceIndex(x: f32, y: f32) -> i32 {
   // Flip across y-axis by negating x
-  let theta = atan2(y, -x) + 3.14159265;
-  let adjustedTheta = (theta + 3.14159265 / 20.0) % (2.0 * 3.14159265);
-  let slice = (adjustedTheta / (2.0 * 3.14159265)) * 20.0;
+  // Use more precise PI value matching JavaScript Math.PI
+  let PI: f32 = 3.141592653589793;
+  let theta = atan2(y, -x) + PI;
+  let adjustedTheta = (theta + PI / 20.0) % (2.0 * PI);
+  let slice = (adjustedTheta / (2.0 * PI)) * 20.0;
   return i32(floor(slice));
 }
 
 fn gaussian2D(x: f32, y: f32, mu_x: f32, mu_y: f32, sigma_x: f32, sigma_y: f32) -> f32 {
-  let coef: f32 = 1.0 / (2.0 * 3.14159265 * sigma_x * sigma_y);
+  // Use more precise PI value matching JavaScript Math.PI
+  let PI: f32 = 3.141592653589793;
+  let coef: f32 = 1.0 / (2.0 * PI * sigma_x * sigma_y);
   let exp_part: f32 = exp(-((x - mu_x) * (x - mu_x) / (2.0 * sigma_x * sigma_x) + (y - mu_y) * (y - mu_y) / (2.0 * sigma_y * sigma_y)));
   return coef * exp_part;
 }

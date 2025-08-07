@@ -128,7 +128,7 @@ export const ScoreDistribution: React.FC<ScoreDistributionProps> = () => {
       // Convert back from fixed-point integers to floats
       const segmentResults = new Float32Array(segmentResultsRaw.length);
       for (let i = 0; i < segmentResultsRaw.length; i++) {
-        segmentResults[i] = segmentResultsRaw[i] / 1000000.0;
+        segmentResults[i] = segmentResultsRaw[i] / 500000000.0;
       }
 
       // Process segment results and create probability table
@@ -403,7 +403,7 @@ export const ScoreDistribution: React.FC<ScoreDistributionProps> = () => {
                     textAlign: "left",
                   }}
                 >
-                  Expected Score (Discrete)
+                  Expected Score
                 </div>
                 <div
                   style={{
