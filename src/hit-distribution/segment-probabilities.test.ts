@@ -31,14 +31,13 @@ class SegmentProbabilities {
       return 62; // Miss
     }
 
-    // Bull (50 points) - shader uses the "diameter" constant as radius threshold
-    // The shader constant names are misleading - they're used as radii
-    if (r < this.dartboard.doubleBullDiameter) {
+    // Bull (50 points) - compare radius against radius (diameter / 2)
+    if (r < this.dartboard.doubleBullDiameter / 2) {
       return 61; // Bull
     }
 
-    // Outer bull (25 points) - shader uses the "diameter" constant as radius threshold
-    if (r < this.dartboard.bullDiameter) {
+    // Outer bull (25 points) - compare radius against radius (diameter / 2)
+    if (r < this.dartboard.bullDiameter / 2) {
       return 60; // Outer bull
     }
 

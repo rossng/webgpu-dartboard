@@ -81,13 +81,13 @@ fn getSegmentId(x: f32, y: f32) -> i32 {
     return 62; // Miss (outside dartboard)
   }
   
-  // Bull (50 points)
-  if (r < DOUBLE_BULL_DIAMETER) {
+  // Bull (50 points) - compare radius against radius (diameter / 2)
+  if (r < DOUBLE_BULL_DIAMETER / 2.0) {
     return 61; // Bull
   }
   
-  // Outer bull (25 points)
-  if (r < BULL_DIAMETER) {
+  // Outer bull (25 points) - compare radius against radius (diameter / 2)
+  if (r < BULL_DIAMETER / 2.0) {
     return 60; // Outer bull
   }
   
