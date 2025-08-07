@@ -2,7 +2,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { REGULATION_BOARD, normaliseDartboard } from "../dartboard/dartboard-definition";
 import { convertTargetToPixel, gaussian2D } from "../test/utils";
 import { cleanupWebGPU, initWebGPU } from "../test/webgpu-setup";
-import segmentProbabilitiesShader from "./segment-probabilities.wgsl?raw";
+import { runSegmentProbabilitiesShader } from "./segment-probabilities";
 
 // JavaScript implementation of the segment probabilities calculation
 class SegmentProbabilities {
@@ -135,7 +135,7 @@ describe("Segment Probabilities WebGPU Shader", () => {
     await cleanupWebGPU();
   });
 
-  async function runSegmentProbabilitiesShader(
+  async function runSegmentProbabilitiesShaderTest(
     width: number,
     height: number,
     targetX: number,
@@ -143,125 +143,16 @@ describe("Segment Probabilities WebGPU Shader", () => {
     sigmaX: number,
     sigmaY: number,
   ): Promise<{ hitData: Float32Array; segmentSums: Uint32Array }> {
-    // Create shader module
-    const shaderModule = device.createShaderModule({
-      label: "segment probabilities shader",
-      code: segmentProbabilitiesShader,
+    const result = await runSegmentProbabilitiesShader(device, {
+      width,
+      height,
+      targetX,
+      targetY,
+      sigmaX,
+      sigmaY,
     });
 
-    // Create compute pipeline
-    const pipeline = device.createComputePipeline({
-      label: "segment probabilities pipeline",
-      layout: "auto",
-      compute: {
-        module: shaderModule,
-        entryPoint: "computeSegmentProbabilities",
-      },
-    });
-
-    // Create buffers
-    const hitDataSize = width * height * 4; // Float32
-    const hitDataBuffer = device.createBuffer({
-      label: "hit data buffer",
-      size: hitDataSize,
-      usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC,
-    });
-
-    const paramsBuffer = device.createBuffer({
-      label: "params buffer",
-      size: 16, // 4 floats
-      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
-    });
-
-    const segmentSumsSize = 63 * 4; // 63 segments, Uint32
-    const segmentSumsBuffer = device.createBuffer({
-      label: "segment sums buffer",
-      size: segmentSumsSize,
-      usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC,
-      mappedAtCreation: true,
-    });
-
-    // Initialize segment sums to zero
-    const segmentSumsData = new Uint32Array(segmentSumsBuffer.getMappedRange());
-    segmentSumsData.fill(0);
-    segmentSumsBuffer.unmap();
-
-    const sigmasBuffer = device.createBuffer({
-      label: "sigmas buffer",
-      size: 8, // 2 floats
-      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
-    });
-
-    // Write parameters
-    const params = new Float32Array([width, height, targetX, targetY]);
-    device.queue.writeBuffer(paramsBuffer, 0, params);
-
-    const sigmas = new Float32Array([sigmaX, sigmaY]);
-    device.queue.writeBuffer(sigmasBuffer, 0, sigmas);
-
-    // Create result buffers for reading
-    const hitDataResultBuffer = device.createBuffer({
-      label: "hit data result buffer",
-      size: hitDataSize,
-      usage: GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST,
-    });
-
-    const segmentSumsResultBuffer = device.createBuffer({
-      label: "segment sums result buffer",
-      size: segmentSumsSize,
-      usage: GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST,
-    });
-
-    // Create bind group
-    const bindGroup = device.createBindGroup({
-      label: "bind group",
-      layout: pipeline.getBindGroupLayout(0),
-      entries: [
-        { binding: 0, resource: { buffer: hitDataBuffer } },
-        { binding: 1, resource: { buffer: paramsBuffer } },
-        { binding: 2, resource: { buffer: segmentSumsBuffer } },
-        { binding: 3, resource: { buffer: sigmasBuffer } },
-      ],
-    });
-
-    // Execute compute shader
-    const encoder = device.createCommandEncoder();
-    const computePass = encoder.beginComputePass();
-
-    computePass.setPipeline(pipeline);
-    computePass.setBindGroup(0, bindGroup);
-    computePass.dispatchWorkgroups(width, height);
-    computePass.end();
-
-    // Copy results to readable buffers
-    encoder.copyBufferToBuffer(hitDataBuffer, 0, hitDataResultBuffer, 0, hitDataSize);
-    encoder.copyBufferToBuffer(segmentSumsBuffer, 0, segmentSumsResultBuffer, 0, segmentSumsSize);
-
-    // Submit commands
-    const commandBuffer = encoder.finish();
-    device.queue.submit([commandBuffer]);
-
-    // Read hit data results
-    await hitDataResultBuffer.mapAsync(GPUMapMode.READ);
-    const hitDataArrayBuffer = hitDataResultBuffer.getMappedRange();
-    const hitData = new Float32Array(hitDataArrayBuffer.slice(0));
-    hitDataResultBuffer.unmap();
-
-    // Read segment sums results
-    await segmentSumsResultBuffer.mapAsync(GPUMapMode.READ);
-    const segmentSumsArrayBuffer = segmentSumsResultBuffer.getMappedRange();
-    const segmentSums = new Uint32Array(segmentSumsArrayBuffer.slice(0));
-    segmentSumsResultBuffer.unmap();
-
-    // Clean up
-    hitDataBuffer.destroy();
-    paramsBuffer.destroy();
-    segmentSumsBuffer.destroy();
-    sigmasBuffer.destroy();
-    hitDataResultBuffer.destroy();
-    segmentSumsResultBuffer.destroy();
-
-    return { hitData, segmentSums };
+    return { hitData: result.hitData, segmentSums: result.segmentSumsRaw };
   }
 
   it("should validate segment probabilities against JS implementation on 1000x1000 grid", async () => {
@@ -277,7 +168,7 @@ describe("Segment Probabilities WebGPU Shader", () => {
     const jsResults = jsImpl.computeSegmentProbabilities(targetX, targetY, sigmaX, sigmaY);
 
     // Run WebGPU shader
-    const gpuResults = await runSegmentProbabilitiesShader(
+    const gpuResults = await runSegmentProbabilitiesShaderTest(
       width,
       height,
       targetX,
@@ -335,7 +226,7 @@ describe("Segment Probabilities WebGPU Shader", () => {
     ];
 
     for (const target of targets) {
-      const result = await runSegmentProbabilitiesShader(
+      const result = await runSegmentProbabilitiesShaderTest(
         width,
         height,
         target.x,

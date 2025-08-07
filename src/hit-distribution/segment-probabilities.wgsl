@@ -127,6 +127,10 @@ fn getSliceIndex(x: f32, y: f32) -> i32 {
   return i32(floor(slice));
 }
 
+/**
+ * Calculate the Gaussian probability density function for a 2D normal distribution
+ * Parameters are in pixels.
+ */
 fn gaussian2D(x: f32, y: f32, mu_x: f32, mu_y: f32, sigma_x: f32, sigma_y: f32) -> f32 {
   // Use more precise PI value matching JavaScript Math.PI
   let PI: f32 = 3.141592653589793;

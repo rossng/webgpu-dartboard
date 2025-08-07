@@ -6,7 +6,7 @@ import { drawRadialScores } from "../dartboard/dartboard-labels";
 import { GaussianDistributionControls } from "../expected-score/GaussianDistributionControls";
 import { TargetIndicator } from "../expected-score/TargetIndicator";
 import { TargetPositionDisplay } from "../expected-score/TargetPositionDisplay";
-import segmentProbabilitiesShader from "../hit-distribution/segment-probabilities.wgsl?raw";
+import { runSegmentProbabilitiesShader } from "../hit-distribution/segment-probabilities";
 import { getDevice, width } from "../webgpu/util";
 import { getViridisColor } from "../webgpu/viridis";
 import weightedGrid from "./weighted-grid.wgsl?raw";
@@ -37,99 +37,14 @@ export const ScoreDistribution: React.FC<ScoreDistributionProps> = () => {
       }
 
       // First run segment probabilities to get the table data
-      const probModule = device.createShaderModule({
-        label: "segment probabilities module",
-        code: segmentProbabilitiesShader,
+      const { segmentSums: segmentResults } = await runSegmentProbabilitiesShader(device, {
+        width,
+        height: width,
+        targetX: targetPosition.x,
+        targetY: targetPosition.y,
+        sigmaX: gaussianStddev,
+        sigmaY: gaussianStddev,
       });
-
-      const probPipeline = device.createComputePipeline({
-        label: "segment probabilities pipeline",
-        layout: "auto",
-        compute: {
-          module: probModule,
-          entryPoint: "computeSegmentProbabilities",
-        },
-      });
-
-      const probInput = new Float32Array(width * width);
-      const segmentSums = new Uint32Array(63); // 20 singles + 20 triples + 20 doubles + bull + outer bull + miss
-
-      const probWorkBuffer = device.createBuffer({
-        label: "prob work buffer",
-        size: probInput.byteLength,
-        usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC | GPUBufferUsage.COPY_DST,
-      });
-      device.queue.writeBuffer(probWorkBuffer, 0, probInput);
-
-      const segmentBuffer = device.createBuffer({
-        label: "segment buffer",
-        size: segmentSums.byteLength,
-        usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC | GPUBufferUsage.COPY_DST,
-      });
-      device.queue.writeBuffer(segmentBuffer, 0, segmentSums);
-
-      const segmentResultBuffer = device.createBuffer({
-        label: "segment result buffer",
-        size: segmentSums.byteLength,
-        usage: GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST,
-      });
-
-      const probUniformData = new Float32Array([width, width, targetPosition.x, targetPosition.y]);
-      const probUniformBuffer = device.createBuffer({
-        size: probUniformData.byteLength,
-        usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
-      });
-      device.queue.writeBuffer(probUniformBuffer, 0, probUniformData);
-
-      const sigmaData = new Float32Array([gaussianStddev, gaussianStddev]);
-      const sigmaBuffer = device.createBuffer({
-        size: Math.max(sigmaData.byteLength, 16),
-        usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
-      });
-      device.queue.writeBuffer(sigmaBuffer, 0, sigmaData);
-
-      const probBindGroup = device.createBindGroup({
-        label: "bindGroup for prob buffer",
-        layout: probPipeline.getBindGroupLayout(0),
-        entries: [
-          { binding: 0, resource: { buffer: probWorkBuffer } },
-          { binding: 1, resource: { buffer: probUniformBuffer } },
-          { binding: 2, resource: { buffer: segmentBuffer } },
-          { binding: 3, resource: { buffer: sigmaBuffer } },
-        ],
-      });
-
-      const probEncoder = device.createCommandEncoder({
-        label: "segment probabilities encoder",
-      });
-      const probPass = probEncoder.beginComputePass({
-        label: "segment probabilities compute pass",
-      });
-      probPass.setPipeline(probPipeline);
-      probPass.setBindGroup(0, probBindGroup);
-      probPass.dispatchWorkgroups(width, width);
-      probPass.end();
-
-      probEncoder.copyBufferToBuffer(
-        segmentBuffer,
-        0,
-        segmentResultBuffer,
-        0,
-        segmentResultBuffer.size,
-      );
-
-      const probCommandBuffer = probEncoder.finish();
-      device.queue.submit([probCommandBuffer]);
-
-      await segmentResultBuffer.mapAsync(GPUMapMode.READ);
-      const segmentResultsRaw = new Uint32Array(segmentResultBuffer.getMappedRange().slice(0));
-      segmentResultBuffer.unmap();
-
-      // Convert back from fixed-point integers to floats
-      const segmentResults = new Float32Array(segmentResultsRaw.length);
-      for (let i = 0; i < segmentResultsRaw.length; i++) {
-        segmentResults[i] = segmentResultsRaw[i] / 500000000.0;
-      }
 
       // Process segment results and create probability table
       const radialScores = [6, 13, 4, 18, 1, 20, 5, 12, 9, 14, 11, 8, 16, 7, 19, 3, 17, 2, 15, 10];
