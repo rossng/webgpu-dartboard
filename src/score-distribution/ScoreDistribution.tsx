@@ -448,7 +448,7 @@ export const ScoreDistribution: React.FC<ScoreDistributionProps> = () => {
             Show Dartboard Colors
           </label>
           <p style={{ fontSize: "14px", color: "#666", marginTop: "8px" }}>
-            Display visualizations with traditional dartboard colors (green and cream segments).
+            Use traditional dartboard colors.
           </p>
         </div>
 

@@ -1,12 +1,11 @@
 import { atom } from "jotai";
-import { 
-  ExpectedScoreState, 
-  DisplayOptions, 
-  TargetPosition, 
-  expectedScoreStore,
-  EXPECTED_SCORE_CANVAS_SIZE
-} from "./ExpectedScoreStore";
 import { mmToPixels } from "../dartboard/dartboard-definition";
+import {
+  EXPECTED_SCORE_CANVAS_SIZE,
+  ExpectedScoreState,
+  TargetPosition,
+  expectedScoreStore,
+} from "./ExpectedScoreStore";
 
 // Constants for conversion
 const DEFAULT_STDDEV_MM = 50;
@@ -18,11 +17,6 @@ const defaultStddevPixels = mmToPixels(DEFAULT_STDDEV_MM, EXPECTED_SCORE_CANVAS_
 export const gaussianStddevAtom = atom<number>(defaultStddevPixels); // 50mm default in pixels
 
 export const targetPositionAtom = atom<TargetPosition>({ x: 0, y: 0 });
-
-export const displayOptionsAtom = atom<DisplayOptions>({
-  showSegmentBoundaries: true,
-  showHighestScore: true,
-});
 
 export const isUserInteractingAtom = atom<boolean>(false);
 
@@ -41,82 +35,51 @@ export const expectedScoreStateAtom = atom<ExpectedScoreState>({
 export const expectedScoreAtTargetAtom = atom<number | null>((get) => {
   const state = get(expectedScoreStateAtom);
   const targetPosition = get(targetPositionAtom);
-  
-  return expectedScoreStore.getExpectedScoreAtPosition(
-    state.resultData,
-    targetPosition
-  );
+
+  return expectedScoreStore.getExpectedScoreAtPosition(state.resultData, targetPosition);
 });
 
 // Action atoms for triggering computations
-export const computeExpectedScoreAtom = atom(
-  null,
-  async (get, set) => {
-    const gaussianStddev = get(gaussianStddevAtom);
-    const displayOptions = get(displayOptionsAtom);
-    
-    const updateState = (updates: Partial<ExpectedScoreState>) => {
-      set(expectedScoreStateAtom, (prev) => ({ ...prev, ...updates }));
-    };
+export const computeExpectedScoreAtom = atom(null, async (get, set) => {
+  const gaussianStddev = get(gaussianStddevAtom);
 
-    await expectedScoreStore.computeExpectedScore(
-      gaussianStddev,
-      displayOptions,
-      updateState
-    );
-  }
-);
+  const updateState = (updates: Partial<ExpectedScoreState>) => {
+    set(expectedScoreStateAtom, (prev) => ({ ...prev, ...updates }));
+  };
 
-export const debouncedComputeExpectedScoreAtom = atom(
-  null,
-  (get, set) => {
-    const gaussianStddev = get(gaussianStddevAtom);
-    const displayOptions = get(displayOptionsAtom);
-    const isUserInteracting = get(isUserInteractingAtom);
-    
-    const updateState = (updates: Partial<ExpectedScoreState>) => {
-      set(expectedScoreStateAtom, (prev) => ({ ...prev, ...updates }));
-    };
+  await expectedScoreStore.computeExpectedScore(gaussianStddev, updateState);
+});
 
-    expectedScoreStore.debouncedCompute(
-      gaussianStddev,
-      displayOptions,
-      updateState,
-      isUserInteracting
-    );
-  }
-);
+export const debouncedComputeExpectedScoreAtom = atom(null, (get, set) => {
+  const gaussianStddev = get(gaussianStddevAtom);
+  const isUserInteracting = get(isUserInteractingAtom);
 
-export const renderToCanvasAtom = atom(
-  null,
-  (get, _set, canvas: HTMLCanvasElement) => {
-    const state = get(expectedScoreStateAtom);
-    const displayOptions = get(displayOptionsAtom);
-    
-    if (!state.resultData) return;
-    
-    expectedScoreStore.renderToCanvas(
-      canvas,
-      state.resultData,
-      state.expectedScoreRange,
-      displayOptions,
-      state.highestScorePosition
-    );
-  }
-);
+  const updateState = (updates: Partial<ExpectedScoreState>) => {
+    set(expectedScoreStateAtom, (prev) => ({ ...prev, ...updates }));
+  };
+
+  expectedScoreStore.debouncedCompute(gaussianStddev, updateState, isUserInteracting);
+});
+
+export const renderToCanvasAtom = atom(null, (get, _set, canvas: HTMLCanvasElement) => {
+  const state = get(expectedScoreStateAtom);
+
+  if (!state.resultData) return;
+
+  expectedScoreStore.renderToCanvas(
+    canvas,
+    state.resultData,
+    state.expectedScoreRange,
+    state.highestScorePosition,
+  );
+});
 
 // Action to initialize the store
-export const initializeStoreAtom = atom(
-  null,
-  async (_get, _set) => {
-    await expectedScoreStore.initialize();
-  }
-);
+export const initializeStoreAtom = atom(null, async (_get, _set) => {
+  await expectedScoreStore.initialize();
+});
 
 // Cleanup action
-export const cleanupStoreAtom = atom(
-  null,
-  (_get, _set) => {
-    expectedScoreStore.cleanup();
-  }
-);
+export const cleanupStoreAtom = atom(null, (_get, _set) => {
+  expectedScoreStore.cleanup();
+});

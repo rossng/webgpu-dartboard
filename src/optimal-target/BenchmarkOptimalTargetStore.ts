@@ -3,33 +3,14 @@ import { makeDartboard, mmToPixels } from "../dartboard/dartboard-definition";
 import { drawRadialScores } from "../dartboard/dartboard-labels";
 import { getDevice } from "../webgpu/util";
 import { getViridisColor } from "../webgpu/viridis";
+import { OptimalTargetResult, OptimalTargetState, SigmaRange } from "./OptimalTargetStore";
 import optimalTargetReduceShader from "./optimal-target-reduce.wgsl?raw";
-import optimalTargetShader from "./optimal-target.wgsl?raw";
-
-export interface OptimalTargetResult {
-  sigma: number; // Sigma in mm
-  x: number; // X position in computational canvas pixels
-  y: number; // Y position in computational canvas pixels
-}
-
-export interface OptimalTargetState {
-  results: OptimalTargetResult[];
-  isComputing: boolean;
-  currentSigma: number; // Current sigma in mm
-  isInitialized: boolean;
-}
-
-export interface SigmaRange {
-  min: number; // Minimum sigma in mm
-  max: number; // Maximum sigma in mm
-  step: number; // Step size in mm
-}
 
 /**
- * OptimalTargetStore handles WebGPU computations for finding optimal dartboard target positions.
- * Each instance is parameterized by canvas size, allowing different resolution computations.
+ * Enhanced OptimalTargetStore for benchmarking with configurable workgroup parameters.
+ * Allows testing different workgroup sizes and number of workgroups for optimization.
  */
-export class OptimalTargetStore {
+export class BenchmarkOptimalTargetStore {
   private device: GPUDevice | null = null;
   private findOptimalPositionPipeline: GPUComputePipeline | null = null;
   private findGlobalOptimumPipeline: GPUComputePipeline | null = null;
@@ -38,20 +19,38 @@ export class OptimalTargetStore {
   private uniformBuffer: GPUBuffer | null = null;
   private resultBuffer: GPUBuffer | null = null;
   private currentComputation: Promise<void> | null = null;
-  private readonly numWorkgroups = 32; // Number of workgroups to use (optimized from benchmark results)
 
   /**
-   * Creates a new OptimalTargetStore instance.
+   * Creates a new BenchmarkOptimalTargetStore instance.
    * @param canvasSize - The size (width and height) of the dartboard canvas in pixels.
-   *                     Higher values provide more accurate results but require more computation.
+   * @param workgroupSize - The size of each workgroup (must be a power of 2, typically 16, 32, 64, 128, or 256).
+   * @param numWorkgroups - The number of workgroups to dispatch.
    */
-  constructor(private readonly canvasSize: number) {}
+  constructor(
+    private readonly canvasSize: number,
+    private readonly workgroupSize: number = 64,
+    private readonly numWorkgroups: number = 16
+  ) {}
 
   /**
    * Gets the canvas size this store was configured with.
    */
   getCanvasSize(): number {
     return this.canvasSize;
+  }
+
+  /**
+   * Gets the workgroup size this store was configured with.
+   */
+  getWorkgroupSize(): number {
+    return this.workgroupSize;
+  }
+
+  /**
+   * Gets the number of workgroups this store was configured with.
+   */
+  getNumWorkgroups(): number {
+    return this.numWorkgroups;
   }
 
   async initialize(): Promise<void> {
@@ -61,19 +60,22 @@ export class OptimalTargetStore {
     }
     this.device = device;
 
+    // Create custom shader with configurable workgroup size
+    const customOptimalTargetShader = this.createCustomOptimalTargetShader();
+
     // Create shader modules and pipelines
     const module1 = this.device.createShaderModule({
-      label: "optimal target module",
-      code: optimalTargetShader,
+      label: "benchmark optimal target module",
+      code: customOptimalTargetShader,
     });
 
     const module2 = this.device.createShaderModule({
-      label: "optimal target reduce module",
+      label: "benchmark optimal target reduce module",
       code: optimalTargetReduceShader,
     });
 
     this.findOptimalPositionPipeline = this.device.createComputePipeline({
-      label: "find optimal position pipeline",
+      label: "benchmark find optimal position pipeline",
       layout: "auto",
       compute: {
         module: module1,
@@ -82,7 +84,7 @@ export class OptimalTargetStore {
     });
 
     this.findGlobalOptimumPipeline = this.device.createComputePipeline({
-      label: "find global optimum pipeline",
+      label: "benchmark find global optimum pipeline",
       layout: "auto",
       compute: {
         module: module2,
@@ -92,13 +94,13 @@ export class OptimalTargetStore {
 
     // Create persistent buffers
     this.workgroupResultsBuffer = this.device.createBuffer({
-      label: "workgroup results buffer",
+      label: "benchmark workgroup results buffer",
       size: this.numWorkgroups * 12, // vec3f = 3 * f32 = 12 bytes per workgroup
       usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC,
     });
 
     this.resultBuffer = this.device.createBuffer({
-      label: "result buffer",
+      label: "benchmark result buffer",
       size: 12, // vec3f = 3 * f32 = 12 bytes for final result
       usage: GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST,
     });
@@ -106,7 +108,7 @@ export class OptimalTargetStore {
     // Create dartboard data
     const dartboardScore = makeDartboard(this.canvasSize);
     this.dartboardBuffer = this.device.createBuffer({
-      label: "dartboard buffer",
+      label: "benchmark dartboard buffer",
       size: dartboardScore.byteLength,
       usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
     });
@@ -117,6 +119,107 @@ export class OptimalTargetStore {
       size: 16, // vec4f = 4 * f32 = 16 bytes
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
     });
+  }
+
+  private createCustomOptimalTargetShader(): string {
+    // Generate shader with custom workgroup size
+    return `@group(0) @binding(0) var<storage, read_write> workgroup_results: array<vec3f>; // x, y, score for each workgroup
+@group(0) @binding(1) var<storage, read> dartboard: array<u32>;
+@group(0) @binding(2) var<uniform> params: vec4f; // x: width, y: height, z: sigma, w: num_workgroups
+
+const WORKGROUP_SIZE: u32 = ${this.workgroupSize};
+var<workgroup> shared_scores: array<f32, WORKGROUP_SIZE>;
+var<workgroup> shared_positions: array<vec2f, WORKGROUP_SIZE>;
+
+@compute @workgroup_size(${this.workgroupSize}) fn findOptimalPosition(
+  @builtin(workgroup_id) workgroup_id: vec3<u32>,
+  @builtin(local_invocation_index) local_index: u32,
+  @builtin(global_invocation_id) global_id: vec3<u32>,
+  @builtin(num_workgroups) num_workgroups: vec3<u32>
+) {
+  let width = u32(params.x);
+  let height = u32(params.y);
+  let sigma = params.z;
+  let total_positions = width * height;
+  
+  // Calculate how many positions this workgroup should handle
+  let total_workgroups = num_workgroups.x * num_workgroups.y * num_workgroups.z;
+  let positions_per_workgroup = (total_positions + total_workgroups - 1) / total_workgroups;
+  let workgroup_index = workgroup_id.x + workgroup_id.y * num_workgroups.x + workgroup_id.z * num_workgroups.x * num_workgroups.y;
+  let workgroup_start = workgroup_index * positions_per_workgroup;
+  let workgroup_end = min(workgroup_start + positions_per_workgroup, total_positions);
+  
+  // Each thread in the workgroup handles a subset of positions
+  let positions_per_thread = (positions_per_workgroup + WORKGROUP_SIZE - 1) / WORKGROUP_SIZE;
+  let thread_start = workgroup_start + local_index * positions_per_thread;
+  let thread_end = min(thread_start + positions_per_thread, workgroup_end);
+  
+  var max_expected_score: f32 = 0.0;
+  var optimal_x: f32 = 0.0;
+  var optimal_y: f32 = 0.0;
+  
+  // Each thread searches its assigned positions
+  for (var pos: u32 = thread_start; pos < thread_end; pos = pos + 1) {
+    let x = pos % width;
+    let y = pos / width;
+    let expected_score = computeExpectedScoreAtPosition(f32(x), f32(y), sigma, width, height);
+    
+    if (expected_score > max_expected_score) {
+      max_expected_score = expected_score;
+      optimal_x = f32(x);
+      optimal_y = f32(y);
+    }
+  }
+  
+  // Store this thread's best result in shared memory
+  shared_scores[local_index] = max_expected_score;
+  shared_positions[local_index] = vec2f(optimal_x, optimal_y);
+  
+  // Synchronize workgroup threads
+  workgroupBarrier();
+  
+  // Perform parallel reduction to find the best result across the workgroup
+  // Only thread 0 performs the reduction
+  if (local_index == 0) {
+    var workgroup_max_score = shared_scores[0];
+    var workgroup_optimal_position = shared_positions[0];
+    
+    for (var i: u32 = 1; i < WORKGROUP_SIZE; i = i + 1) {
+      if (shared_scores[i] > workgroup_max_score) {
+        workgroup_max_score = shared_scores[i];
+        workgroup_optimal_position = shared_positions[i];
+      }
+    }
+    
+    // Store this workgroup's result for later reduction
+    workgroup_results[workgroup_index] = vec3f(workgroup_optimal_position.x, workgroup_optimal_position.y, workgroup_max_score);
+  }
+}
+
+
+fn computeExpectedScoreAtPosition(target_x: f32, target_y: f32, sigma: f32, width: u32, height: u32) -> f32 {
+  var total_probability: f32 = 0.0;
+  var total_score: f32 = 0.0;
+  
+  // Sample the Gaussian distribution around the target position
+  for (var y: u32 = 0; y < height; y = y + 1) {
+    for (var x: u32 = 0; x < width; x = x + 1) {
+      let gaussian = gaussian2D(f32(x), f32(y), target_x, target_y, sigma, sigma);
+      let score = f32(dartboard[y * width + x]);
+      
+      total_probability = total_probability + gaussian;
+      total_score = total_score + gaussian * score;
+    }
+  }
+  
+  return select(total_score / total_probability, 0.0, total_probability == 0.0);
+}
+
+fn gaussian2D(x: f32, y: f32, mu_x: f32, mu_y: f32, sigma_x: f32, sigma_y: f32) -> f32 {
+  let coef: f32 = 1.0 / (2.0 * 3.14159265 * sigma_x * sigma_y);
+  let exp_part: f32 = exp(-((x - mu_x) * (x - mu_x) / (2.0 * sigma_x * sigma_x) + (y - mu_y) * (y - mu_y) / (2.0 * sigma_y * sigma_y)));
+  return coef * exp_part;
+}`;
   }
 
   async computeAllOptimalTargets(
@@ -217,7 +320,7 @@ export class OptimalTargetStore {
 
     // Create bind group for first stage
     const bindGroup1 = this.device.createBindGroup({
-      label: "optimal target bind group stage 1",
+      label: "benchmark optimal target bind group stage 1",
       layout: this.findOptimalPositionPipeline.getBindGroupLayout(0),
       entries: [
         { binding: 0, resource: { buffer: this.workgroupResultsBuffer } },
@@ -228,7 +331,7 @@ export class OptimalTargetStore {
 
     // Create bind group for second stage (only needs workgroup results and uniform)
     const bindGroup2 = this.device.createBindGroup({
-      label: "optimal target bind group stage 2",
+      label: "benchmark optimal target bind group stage 2",
       layout: this.findGlobalOptimumPipeline.getBindGroupLayout(0),
       entries: [
         { binding: 0, resource: { buffer: this.workgroupResultsBuffer } },
@@ -238,12 +341,12 @@ export class OptimalTargetStore {
 
     // Execute computation
     const encoder = this.device.createCommandEncoder({
-      label: "optimal target encoder",
+      label: "benchmark optimal target encoder",
     });
 
     // First stage: find optimal positions within each workgroup
     const pass1 = encoder.beginComputePass({
-      label: "optimal target compute pass stage 1",
+      label: "benchmark optimal target compute pass stage 1",
     });
     pass1.setPipeline(this.findOptimalPositionPipeline);
     pass1.setBindGroup(0, bindGroup1);
@@ -252,7 +355,7 @@ export class OptimalTargetStore {
 
     // Second stage: find global optimum across workgroups
     const pass2 = encoder.beginComputePass({
-      label: "optimal target compute pass stage 2",
+      label: "benchmark optimal target compute pass stage 2",
     });
     pass2.setPipeline(this.findGlobalOptimumPipeline);
     pass2.setBindGroup(0, bindGroup2);
@@ -274,122 +377,5 @@ export class OptimalTargetStore {
       x: resultData[0],
       y: resultData[1],
     };
-  }
-
-  getOptimalTargetForSigma(
-    results: OptimalTargetResult[],
-    sigmaMm: number,
-  ): OptimalTargetResult | null {
-    // Find the closest sigma value in results (both are in mm)
-    let closestResult: OptimalTargetResult | null = null;
-    let closestDistance = Infinity;
-
-    for (const result of results) {
-      const distance = Math.abs(result.sigma - sigmaMm);
-      if (distance < closestDistance) {
-        closestDistance = distance;
-        closestResult = result;
-      }
-    }
-
-    return closestResult;
-  }
-
-  renderToCanvas(
-    canvas: HTMLCanvasElement,
-    currentSigmaMm: number,
-    optimalPosition: { x: number; y: number } | null,
-    showDartboardColors: boolean = true,
-  ): void {
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-
-    // Clear canvas
-    ctx.fillStyle = "#000";
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-    const imageData = ctx.createImageData(canvas.width, canvas.height);
-
-    // Calculate scale factor from computational resolution to display resolution
-    const scaleX = canvas.width / this.canvasSize;
-    const scaleY = canvas.height / this.canvasSize;
-
-    if (showDartboardColors) {
-      // Render dartboard colors at display resolution
-      for (let displayY = 0; displayY < canvas.height; displayY++) {
-        for (let displayX = 0; displayX < canvas.width; displayX++) {
-          // Map display coordinates to normalized coordinates (-1 to 1)
-          const normX = (displayX / canvas.width) * 2 - 1;
-          const normY = (displayY / canvas.height) * 2 - 1;
-
-          // Get dartboard color at this position
-          const color = getDartboardColor(normX, normY);
-
-          const index = (displayY * canvas.width + displayX) * 4;
-
-          // Use full dartboard colors without intensity scaling
-          imageData.data[index + 0] = color.r;
-          imageData.data[index + 1] = color.g;
-          imageData.data[index + 2] = color.b;
-          imageData.data[index + 3] = 255;
-        }
-      }
-    } else {
-      // Generate dartboard scores at display resolution for viridis rendering
-      const displayDartboardScore = makeDartboard(canvas.width);
-      const maxScore = displayDartboardScore.reduce((max, score) => Math.max(max, score), 0);
-
-      for (let displayY = 0; displayY < canvas.height; displayY++) {
-        for (let displayX = 0; displayX < canvas.width; displayX++) {
-          const score = displayDartboardScore[displayY * canvas.width + displayX];
-          const intensity = maxScore > 0 ? score / maxScore : 0;
-          const color = getViridisColor(intensity);
-
-          const index = (displayY * canvas.width + displayX) * 4;
-
-          imageData.data[index + 0] = color.r;
-          imageData.data[index + 1] = color.g;
-          imageData.data[index + 2] = color.b;
-          imageData.data[index + 3] = 255;
-        }
-      }
-    }
-
-    ctx.putImageData(imageData, 0, 0);
-
-    // Draw radial scores when using dartboard colors
-    if (showDartboardColors) {
-      const centerX = canvas.width / 2;
-      const centerY = canvas.height / 2;
-      const labelRadius = canvas.width * 0.45; // Place labels outside the dartboard
-      drawRadialScores(ctx, centerX, centerY, labelRadius, 14, "#fff");
-    }
-
-    // Draw optimal position as a red dot (scaled to display coordinates)
-    if (optimalPosition) {
-      const displayX = optimalPosition.x * scaleX;
-      const displayY = optimalPosition.y * scaleY;
-
-      // Draw Gaussian standard deviation ring
-      const sigmaPixelsComp = mmToPixels(currentSigmaMm, this.canvasSize);
-      const sigmaPixelsDisplay = sigmaPixelsComp * scaleX;
-
-      ctx.strokeStyle = "rgba(255, 255, 255, 0.7)";
-      ctx.lineWidth = 1;
-      ctx.beginPath();
-      ctx.arc(displayX, displayY, sigmaPixelsDisplay, 0, 2 * Math.PI);
-      ctx.stroke();
-
-      // Draw optimal position dot
-      ctx.fillStyle = "red";
-      ctx.beginPath();
-      ctx.arc(displayX, displayY, 4, 0, 2 * Math.PI);
-      ctx.fill();
-
-      // Add white border for better visibility
-      ctx.strokeStyle = "white";
-      ctx.lineWidth = 2;
-      ctx.stroke();
-    }
   }
 }

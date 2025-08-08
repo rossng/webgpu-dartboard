@@ -1,4 +1,4 @@
-import React from 'react';
+import React from "react";
 
 interface TargetPositionDisplayProps {
   targetPosition: { x: number; y: number };
@@ -23,15 +23,26 @@ export const TargetPositionDisplay: React.FC<TargetPositionDisplayProps> = ({
 
   return (
     <div style={{ marginTop: "30px" }}>
-      <h3>Target Position</h3>
-      <div style={{ fontSize: "14px", color: "#333", marginBottom: "10px" }}>
-        <p style={{ marginBottom: "4px" }}>
+      <label style={{ display: "block", marginBottom: "8px", fontWeight: "bold" }}>
+        Target Position
+      </label>
+      <div
+        style={{
+          fontSize: "14px",
+          color: "#333",
+          marginBottom: "10px",
+          flex: "row",
+          display: "flex",
+          gap: "10px",
+        }}
+      >
+        <p style={{ marginBottom: "4px", width: "max-content" }}>
           X: {xMm.toFixed(1)} mm
           <span style={{ fontSize: "11px", color: "#999", marginLeft: "8px" }}>
             ({targetPosition.x.toFixed(3)})
           </span>
         </p>
-        <p>
+        <p style={{ marginBottom: "4px", width: "max-content" }}>
           Y: {yMm.toFixed(1)} mm
           <span style={{ fontSize: "11px", color: "#999", marginLeft: "8px" }}>
             ({targetPosition.y.toFixed(3)})

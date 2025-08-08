@@ -1,8 +1,8 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { CanvasVisualization } from "../common/CanvasVisualization";
 import { getDartboardColor } from "../dartboard/dartboard-colors";
-import { drawRadialScores } from "../dartboard/dartboard-labels";
 import { mmToPixels, pixelsToMm } from "../dartboard/dartboard-definition";
+import { drawRadialScores } from "../dartboard/dartboard-labels";
 import { GaussianDistributionControls } from "../expected-score/GaussianDistributionControls";
 import { TargetIndicator } from "../expected-score/TargetIndicator";
 import { TargetPositionDisplay } from "../expected-score/TargetPositionDisplay";
@@ -307,7 +307,7 @@ export const HitDistribution: React.FC<HitDistributionProps> = () => {
             Show Dartboard Colors
           </label>
           <p style={{ fontSize: "14px", color: "#666", marginTop: "8px" }}>
-            Display visualizations with traditional dartboard colors (green and cream segments).
+            Use traditional dartboard colors.
           </p>
         </div>
 

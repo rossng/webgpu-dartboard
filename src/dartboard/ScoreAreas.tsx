@@ -1,9 +1,9 @@
-import scoreAreasShader from "./score-areas.wgsl?raw";
 import React, { useCallback, useEffect, useState } from "react";
 import { CanvasVisualization } from "../common/CanvasVisualization";
 import { getDevice, width } from "../webgpu/util";
 import { getDartboardColor } from "./dartboard-colors";
 import { drawRadialScores } from "./dartboard-labels";
+import scoreAreasShader from "./score-areas.wgsl?raw";
 
 interface ScoreAreasProps {}
 
@@ -277,7 +277,7 @@ export const ScoreAreas: React.FC<ScoreAreasProps> = () => {
             Show Dartboard Colors
           </label>
           <p style={{ fontSize: "14px", color: "#666", marginTop: "8px" }}>
-            Display visualizations with traditional dartboard colors (green and cream segments).
+            Use traditional dartboard colors.
           </p>
         </div>
       </div>

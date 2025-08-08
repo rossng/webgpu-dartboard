@@ -7,7 +7,6 @@ import {
   cleanupStoreAtom,
   computeExpectedScoreAtom,
   debouncedComputeExpectedScoreAtom,
-  displayOptionsAtom,
   expectedScoreAtTargetAtom,
   expectedScoreStateAtom,
   gaussianStddevAtom,
@@ -16,10 +15,10 @@ import {
   renderToCanvasAtom,
   targetPositionAtom,
 } from "./expectedScoreAtoms";
+import { EXPECTED_SCORE_CANVAS_SIZE } from "./ExpectedScoreStore";
 import { GaussianDistributionControls } from "./GaussianDistributionControls";
 import { TargetIndicator } from "./TargetIndicator";
 import { TargetPositionDisplay } from "./TargetPositionDisplay";
-import { EXPECTED_SCORE_CANVAS_SIZE } from "./ExpectedScoreStore";
 
 interface ExpectedScoreProps {}
 
@@ -29,7 +28,6 @@ export const ExpectedScore: React.FC<ExpectedScoreProps> = () => {
   const expectedScoreAtTarget = useAtomValue(expectedScoreAtTargetAtom);
   const [gaussianStddev, setGaussianStddev] = useAtom(gaussianStddevAtom);
   const [targetPosition, setTargetPosition] = useAtom(targetPositionAtom);
-  const [displayOptions, setDisplayOptions] = useAtom(displayOptionsAtom);
   const [isUserInteracting, setIsUserInteracting] = useAtom(isUserInteractingAtom);
 
   // Action atoms
@@ -51,12 +49,7 @@ export const ExpectedScore: React.FC<ExpectedScoreProps> = () => {
   useEffect(() => {
     if (!canvasRef.current || isUserInteracting) return;
     computeExpectedScore();
-  }, [
-    displayOptions.showSegmentBoundaries,
-    displayOptions.showHighestScore,
-    isUserInteracting,
-    computeExpectedScore,
-  ]);
+  }, [isUserInteracting, computeExpectedScore]);
 
   // Trigger debounced computation when gaussian changes
   useEffect(() => {
@@ -69,7 +62,7 @@ export const ExpectedScore: React.FC<ExpectedScoreProps> = () => {
     if (canvasRef.current && state.resultData) {
       renderToCanvas(canvasRef.current);
     }
-  }, [state.resultData, state.computationCounter, displayOptions, renderToCanvas]);
+  }, [state.resultData, state.computationCounter, renderToCanvas]);
 
   const handleCanvasReady = useCallback(
     (canvas: HTMLCanvasElement) => {
@@ -171,40 +164,6 @@ export const ExpectedScore: React.FC<ExpectedScoreProps> = () => {
         }}
       >
         <h3>Options</h3>
-
-        <div style={{ marginTop: "20px" }}>
-          <label style={{ display: "flex", alignItems: "center", cursor: "pointer" }}>
-            <input
-              type="checkbox"
-              checked={displayOptions.showSegmentBoundaries}
-              onChange={(e) =>
-                setDisplayOptions((prev) => ({ ...prev, showSegmentBoundaries: e.target.checked }))
-              }
-              style={{ marginRight: "8px" }}
-            />
-            Show Segment Boundaries
-          </label>
-          <p style={{ fontSize: "14px", color: "#666", marginTop: "8px" }}>
-            Overlay subtle lines showing dartboard segment divisions and scoring rings.
-          </p>
-        </div>
-
-        <div style={{ marginTop: "20px" }}>
-          <label style={{ display: "flex", alignItems: "center", cursor: "pointer" }}>
-            <input
-              type="checkbox"
-              checked={displayOptions.showHighestScore}
-              onChange={(e) =>
-                setDisplayOptions((prev) => ({ ...prev, showHighestScore: e.target.checked }))
-              }
-              style={{ marginRight: "8px" }}
-            />
-            Show Highest Expected Score
-          </label>
-          <p style={{ fontSize: "14px", color: "#666", marginTop: "8px" }}>
-            Display a red dot at the position with the highest expected score on the dartboard.
-          </p>
-        </div>
 
         <GaussianDistributionControls
           gaussianStddevPixels={gaussianStddev}

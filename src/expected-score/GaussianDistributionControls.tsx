@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from "react";
-import { mmToPixels, pixelsToMm, REGULATION_BOARD } from "../dartboard/dartboard-definition";
+import { mmToPixels, pixelsToMm } from "../dartboard/dartboard-definition";
 
 interface GaussianDistributionControlsProps {
   gaussianStddevPixels: number;
@@ -61,48 +61,33 @@ export const GaussianDistributionControls: React.FC<GaussianDistributionControls
 
   return (
     <div style={{ marginTop: "30px" }}>
-      <h3>Gaussian Distribution</h3>
-      <div style={{ marginBottom: "15px" }}>
-        <label
-          style={{
-            display: "block",
-            marginBottom: "8px",
-            fontSize: "14px",
-            fontWeight: "bold",
-          }}
-        >
-          Standard Deviation: {gaussianStddevMm.toFixed(1)} mm
-        </label>
-        <input
-          type="range"
-          min="1"
-          max="250"
-          step="1"
-          value={gaussianStddevMm}
-          onChange={(e) => handleSliderChange(Number(e.target.value))}
-          onMouseDown={handleMouseDown}
-          onTouchStart={handleMouseDown}
-          style={{ width: "100%", marginBottom: "8px" }}
-        />
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            fontSize: "12px",
-            color: "#666",
-          }}
-        >
-          <span>Precise (1 mm)</span>
-          <span>Spread (250 mm)</span>
-        </div>
-      </div>
-      <div style={{ fontSize: "12px", color: "#666", marginBottom: "8px" }}>
-        Pixel value: {gaussianStddevPixels.toFixed(0)} px
+      <label style={{ display: "block", marginBottom: "8px", fontWeight: "bold" }}>
+        Standard Deviation (σ): {gaussianStddevMm.toFixed(1)} mm
+      </label>
+      <input
+        type="range"
+        min="1"
+        max="250"
+        step="1"
+        value={gaussianStddevMm}
+        onChange={(e) => handleSliderChange(Number(e.target.value))}
+        onMouseDown={handleMouseDown}
+        onTouchStart={handleMouseDown}
+        style={{ width: "100%", marginBottom: "8px" }}
+      />
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          fontSize: "12px",
+          color: "#666",
+        }}
+      >
+        <span>Precise (1 mm)</span>
+        <span>Spread (250 mm)</span>
       </div>
       <p style={{ fontSize: "12px", color: "#888" }}>
-        Controls the spread of the Gaussian distribution. Lower values mean more precise throws,
-        higher values mean more scattered throws. Based on regulation dartboard dimensions (
-        {REGULATION_BOARD.centerToOuterDouble}mm to outer double ring).
+        Controls the spread of the throws. Higher values represent less accurate throwing.
       </p>
     </div>
   );

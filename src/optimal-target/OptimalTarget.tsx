@@ -220,7 +220,7 @@ export const OptimalTarget: React.FC<OptimalTargetProps> = ({ defaultCanvasSize 
             Show Dartboard Colors
           </label>
           <p style={{ fontSize: "14px", color: "#666", marginTop: "8px" }}>
-            Display visualizations with traditional dartboard colors (green and cream segments).
+            Use traditional dartboard colors.
           </p>
         </div>
 
@@ -287,8 +287,7 @@ export const OptimalTarget: React.FC<OptimalTargetProps> = ({ defaultCanvasSize 
             <span>100</span>
           </div>
           <p style={{ fontSize: "14px", color: "#666", marginTop: "8px" }}>
-            Controls the spread of the Gaussian distribution. Higher values represent less accurate
-            throws.
+            Controls the spread of the throws. Higher values represent less accurate throwing.
           </p>
         </div>
       </div>

@@ -1,10 +1,10 @@
-import expected from "./expected.wgsl?raw";
 import { makeDartboard } from "../dartboard/dartboard-definition";
 import { drawRadialScores, drawSegmentBoundaries } from "../dartboard/dartboard-labels";
 import { getDevice } from "../webgpu/util";
+import { getViridisColor } from "../webgpu/viridis";
+import expected from "./expected.wgsl?raw";
 
 export const EXPECTED_SCORE_CANVAS_SIZE = 500;
-import { getViridisColor } from "../webgpu/viridis";
 
 export interface ExpectedScoreState {
   expectedScoreRange: { min: number; max: number };
@@ -14,11 +14,6 @@ export interface ExpectedScoreState {
   resultData: Float32Array | null;
   renderBuffer: GPUBuffer | null;
   computationCounter: number;
-}
-
-export interface DisplayOptions {
-  showSegmentBoundaries: boolean;
-  showHighestScore: boolean;
 }
 
 export interface TargetPosition {
@@ -42,13 +37,11 @@ export class ExpectedScoreStore {
 
   async computeExpectedScore(
     gaussianStddev: number,
-    displayOptions: DisplayOptions,
     onStateUpdate: (state: Partial<ExpectedScoreState>) => void,
   ): Promise<void> {
     // If computation is already running, queue this one
     if (this.currentComputation) {
-      this.queuedComputation = () =>
-        this.computeExpectedScore(gaussianStddev, displayOptions, onStateUpdate);
+      this.queuedComputation = () => this.computeExpectedScore(gaussianStddev, onStateUpdate);
       return;
     }
 
@@ -113,7 +106,12 @@ export class ExpectedScoreStore {
         usage: GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST,
       });
 
-      const uniformData = new Float32Array([EXPECTED_SCORE_CANVAS_SIZE, EXPECTED_SCORE_CANVAS_SIZE, gaussianStddev, gaussianStddev]);
+      const uniformData = new Float32Array([
+        EXPECTED_SCORE_CANVAS_SIZE,
+        EXPECTED_SCORE_CANVAS_SIZE,
+        gaussianStddev,
+        gaussianStddev,
+      ]);
       const uniformBuffer = this.device.createBuffer({
         size: uniformData.byteLength,
         usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
@@ -191,7 +189,6 @@ export class ExpectedScoreStore {
     canvas: HTMLCanvasElement,
     resultData: Float32Array,
     expectedScoreRange: { min: number; max: number },
-    displayOptions: DisplayOptions,
     highestScorePosition: { x: number; y: number } | null,
   ): void {
     const ctx = canvas.getContext("2d");
@@ -213,15 +210,13 @@ export class ExpectedScoreStore {
 
     ctx.putImageData(imageData, 0, 0);
 
-    // Draw segment boundaries if enabled
-    if (displayOptions.showSegmentBoundaries) {
-      const centerX = EXPECTED_SCORE_CANVAS_SIZE / 2;
-      const centerY = EXPECTED_SCORE_CANVAS_SIZE / 2;
-      drawSegmentBoundaries(ctx, centerX, centerY, EXPECTED_SCORE_CANVAS_SIZE, 0.3);
-    }
+    // Draw segment boundaries
+    const centerX = EXPECTED_SCORE_CANVAS_SIZE / 2;
+    const centerY = EXPECTED_SCORE_CANVAS_SIZE / 2;
+    drawSegmentBoundaries(ctx, centerX, centerY, EXPECTED_SCORE_CANVAS_SIZE, 0.3);
 
-    // Draw red dot at highest score position if enabled
-    if (displayOptions.showHighestScore && highestScorePosition) {
+    // Draw red dot at highest score position
+    if (highestScorePosition) {
       const dotX = (highestScorePosition.x + 1) * EXPECTED_SCORE_CANVAS_SIZE * 0.5;
       const dotY = (highestScorePosition.y + 1) * EXPECTED_SCORE_CANVAS_SIZE * 0.5;
 
@@ -237,8 +232,6 @@ export class ExpectedScoreStore {
     }
 
     // Draw radial scores around the dartboard
-    const centerX = EXPECTED_SCORE_CANVAS_SIZE / 2;
-    const centerY = EXPECTED_SCORE_CANVAS_SIZE / 2;
     const labelRadius = EXPECTED_SCORE_CANVAS_SIZE * 0.45; // Place labels outside the dartboard
     drawRadialScores(ctx, centerX, centerY, labelRadius, 14, "#fff");
   }
@@ -263,7 +256,6 @@ export class ExpectedScoreStore {
 
   debouncedCompute(
     gaussianStddev: number,
-    displayOptions: DisplayOptions,
     onStateUpdate: (state: Partial<ExpectedScoreState>) => void,
     isUserInteracting: boolean = false,
   ): void {
@@ -275,7 +267,7 @@ export class ExpectedScoreStore {
     // Schedule delayed computation
     this.debounceTimeoutId = setTimeout(
       () => {
-        this.computeExpectedScore(gaussianStddev, displayOptions, onStateUpdate);
+        this.computeExpectedScore(gaussianStddev, onStateUpdate);
       },
       isUserInteracting ? 500 : 100,
     );
