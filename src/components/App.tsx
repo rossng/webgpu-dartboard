@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Dartboard } from "../dartboard/Dartboard";
 import { ExpectedScore } from "../expected-score/ExpectedScore";
 import { HitDistribution } from "../hit-distribution/HitDistribution";
@@ -27,7 +27,14 @@ const tabs: Tab[] = [
 ];
 
 export const App: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<TabName>("dartboard");
+  const [activeTab, setActiveTab] = useState<TabName>(() => {
+    const savedTab = localStorage.getItem("webgpu-dartboard-active-tab");
+    return (savedTab as TabName) || "dartboard";
+  });
+
+  useEffect(() => {
+    localStorage.setItem("webgpu-dartboard-active-tab", activeTab);
+  }, [activeTab]);
 
   const ActiveComponent = tabs.find((tab) => tab.id === activeTab)?.component || HitDistribution;
 
