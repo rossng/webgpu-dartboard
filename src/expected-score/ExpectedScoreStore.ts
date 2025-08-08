@@ -137,14 +137,19 @@ export class ExpectedScoreStore {
       });
 
       const encoder = this.device.createCommandEncoder({
-        label: "doubling encoder",
+        label: "expected score encoder",
       });
       const pass = encoder.beginComputePass({
-        label: "doubling compute pass",
+        label: "expected score compute pass",
       });
       pass.setPipeline(pipeline);
       pass.setBindGroup(0, bindGroup);
-      pass.dispatchWorkgroups(100);
+      
+      // Calculate optimal workgroup dispatch for 2D layout
+      // Each workgroup processes 16x16 pixels with 256 threads
+      const workgroupsX = Math.ceil(EXPECTED_SCORE_CANVAS_SIZE / 16);
+      const workgroupsY = Math.ceil(EXPECTED_SCORE_CANVAS_SIZE / 16);
+      pass.dispatchWorkgroups(workgroupsX, workgroupsY, 1);
       pass.end();
 
       encoder.copyBufferToBuffer(workBuffer, 0, resultBuffer, 0, resultBuffer.size);

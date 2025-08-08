@@ -2,55 +2,49 @@
 @group(0) @binding(1) var<uniform> params: vec4f; // x: width, y: height, z: sigmaX, w: sigmaY
 @group(0) @binding(2) var<storage, read> dartboard: array<u32>;
 
-const WORKGROUP_SIZE: u32 = 64;
+const WORKGROUP_SIZE_X: u32 = 16;
+const WORKGROUP_SIZE_Y: u32 = 16;
 
-@compute @workgroup_size(WORKGROUP_SIZE) fn computeSomething(
-  @builtin(workgroup_id) workgroup_id: vec3<u32>,
+@compute @workgroup_size(WORKGROUP_SIZE_X, WORKGROUP_SIZE_Y) fn computeSomething(
   @builtin(global_invocation_id) global_id: vec3<u32>,
-  @builtin(num_workgroups) num_workgroups: vec3<u32>,
-  @builtin(local_invocation_index) local_invocation_index: u32,
 ) {
-  let length = arrayLength(&data);
-  let total_num_workgroups = num_workgroups.x * num_workgroups.y * num_workgroups.z;
-  let count = length / (WORKGROUP_SIZE * total_num_workgroups);
-  let ignore = u32(params.x);
-
-  let workgroup_index =  
-    workgroup_id.x +
-    workgroup_id.y * num_workgroups.x +
-    workgroup_id.z * num_workgroups.x * num_workgroups.y;
-
-  let global_invocation_index =
-     workgroup_index * WORKGROUP_SIZE +
-     local_invocation_index;
-
-  let start = global_invocation_index * count;
-  let end = min(start + count, length);
-
-  for (var i: u32 = start; i < end; i = i + 1) {
-    let edge_length = u32(sqrt(f32(length)));
-    let x = i % edge_length;
-    let y = i / edge_length;
-
-
-    var total_probability: f32 = 0.0;
-    var total_score: f32 = 0.0;
-
-    for (var j: u32 = 0; j < edge_length; j = j + 1) {
-      for (var k: u32 = 0; k < edge_length; k = k + 1) {
-        let gaussian = gaussian2D(f32(k), f32(j), f32(x), f32(y), params.z, params.w);
-        // let gaussian = gaussian2D(f32(x), f32(y), f32(j), f32(k), 100, 100);
-        let score = f32(dartboard[j * edge_length + k]);
-        total_probability = total_probability + gaussian;
-        total_score = total_score + gaussian * score;
-        // data[j * edge_length + k] = gaussian * score;
-      }
-    }
-
-    // data[i] = f32(total_score); // f32(i); // total_score / total_probability;
-    // data[i] = f32(i);
-    data[i] = select(total_score / total_probability, 0.0, total_probability == 0.0);
+  let width = u32(params.x);
+  let height = u32(params.y);
+  let sigma_x = params.z;
+  let sigma_y = params.w;
+  
+  let pixel_x = global_id.x;
+  let pixel_y = global_id.y;
+  
+  // Early exit if out of bounds
+  if (pixel_x >= width || pixel_y >= height) {
+    return;
   }
+  
+  let pixel_index = pixel_y * width + pixel_x;
+  let center_x = f32(pixel_x);
+  let center_y = f32(pixel_y);
+  
+  var total_probability: f32 = 0.0;
+  var total_score: f32 = 0.0;
+  
+  // Iterate through all dartboard positions
+  for (var hit_y: u32 = 0; hit_y < height; hit_y++) {
+    for (var hit_x: u32 = 0; hit_x < width; hit_x++) {
+      // Calculate Gaussian probability
+      let gaussian = gaussian2D(f32(hit_x), f32(hit_y), center_x, center_y, sigma_x, sigma_y);
+      
+      // Get dartboard score at this position
+      let dartboard_index = hit_y * width + hit_x;
+      let score = f32(dartboard[dartboard_index]);
+      
+      total_probability += gaussian;
+      total_score += gaussian * score;
+    }
+  }
+  
+  // Write result
+  data[pixel_index] = select(total_score / total_probability, 0.0, total_probability == 0.0);
 }
 
 fn gaussian2D(x: f32, y: f32, mu_x: f32, mu_y: f32, sigma_x: f32, sigma_y: f32) -> f32 {
