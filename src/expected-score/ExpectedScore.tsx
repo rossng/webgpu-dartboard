@@ -19,8 +19,7 @@ import {
 import { GaussianDistributionControls } from "./GaussianDistributionControls";
 import { TargetIndicator } from "./TargetIndicator";
 import { TargetPositionDisplay } from "./TargetPositionDisplay";
-
-const EXPECTED_SCORE_CANVAS_SIZE = 500;
+import { EXPECTED_SCORE_CANVAS_SIZE } from "./ExpectedScoreStore";
 
 interface ExpectedScoreProps {}
 

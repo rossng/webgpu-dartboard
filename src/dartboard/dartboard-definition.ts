@@ -66,6 +66,35 @@ function getScore(x: number, y: number, dartboard: DartboardDef) {
   return 0;
 }
 
+/**
+ * Convert pixels to millimeters based on dartboard dimensions and canvas size
+ * @param pixels - Value in pixels
+ * @param canvasWidth - Width of the canvas in pixels
+ * @returns Value in millimeters
+ */
+export function pixelsToMm(pixels: number, canvasWidth: number): number {
+  const normalizedDartboard = normaliseDartboard(REGULATION_BOARD);
+  const centerToOuterDoubleNormalized = normalizedDartboard.centerToOuterDouble;
+  const centerToOuterDoubleMm = REGULATION_BOARD.centerToOuterDouble;
+  const pixelToMm = centerToOuterDoubleMm / (centerToOuterDoubleNormalized * (canvasWidth / 2));
+  return pixels * pixelToMm;
+}
+
+/**
+ * Convert millimeters to pixels based on dartboard dimensions and canvas size
+ * @param mm - Value in millimeters
+ * @param canvasWidth - Width of the canvas in pixels
+ * @returns Value in pixels
+ */
+export function mmToPixels(mm: number, canvasWidth: number): number {
+  const normalizedDartboard = normaliseDartboard(REGULATION_BOARD);
+  const centerToOuterDoubleNormalized = normalizedDartboard.centerToOuterDouble;
+  const centerToOuterDoubleMm = REGULATION_BOARD.centerToOuterDouble;
+  const pixelToMm = centerToOuterDoubleMm / (centerToOuterDoubleNormalized * (canvasWidth / 2));
+  const mmToPixel = 1 / pixelToMm;
+  return mm * mmToPixel;
+}
+
 export function makeDartboard(width: number): Uint32Array {
   const dartboard = normaliseDartboard(REGULATION_BOARD);
   const arr = new Uint32Array(width * width);

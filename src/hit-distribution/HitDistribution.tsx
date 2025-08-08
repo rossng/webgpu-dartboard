@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useState } from "react";
 import { CanvasVisualization } from "../common/CanvasVisualization";
 import { getDartboardColor } from "../dartboard/dartboard-colors";
 import { drawRadialScores } from "../dartboard/dartboard-labels";
+import { mmToPixels, pixelsToMm } from "../dartboard/dartboard-definition";
 import { GaussianDistributionControls } from "../expected-score/GaussianDistributionControls";
 import { TargetIndicator } from "../expected-score/TargetIndicator";
 import { TargetPositionDisplay } from "../expected-score/TargetPositionDisplay";
@@ -23,7 +24,10 @@ export const HitDistribution: React.FC<HitDistributionProps> = () => {
   const [segmentProbabilities, setSegmentProbabilities] = useState<SegmentProbability[]>([]);
   const [showDartboardColors, setShowDartboardColors] = useState(true);
   const [targetPosition, setTargetPosition] = useState({ x: 0, y: 0 });
-  const [gaussianStddev, setGaussianStddev] = useState(55); // ~50mm
+  const [gaussianStddevMm, setGaussianStddevMm] = useState(50); // 50mm default
+
+  // Convert mm to pixels for calculations
+  const gaussianStddevPixels = mmToPixels(gaussianStddevMm, width);
 
   const runHitDistribution = useCallback(
     async (canvas: HTMLCanvasElement) => {
@@ -40,8 +44,8 @@ export const HitDistribution: React.FC<HitDistributionProps> = () => {
           height: width,
           targetX: targetPosition.x,
           targetY: targetPosition.y,
-          sigmaX: gaussianStddev,
-          sigmaY: gaussianStddev,
+          sigmaX: gaussianStddevPixels,
+          sigmaY: gaussianStddevPixels,
         },
       );
 
@@ -160,7 +164,7 @@ export const HitDistribution: React.FC<HitDistributionProps> = () => {
       const labelRadius = width * 0.45; // Place labels outside the dartboard
       drawRadialScores(ctx, centerX, centerY, labelRadius, 14, "#fff");
     },
-    [showDartboardColors, targetPosition, gaussianStddev],
+    [showDartboardColors, targetPosition, gaussianStddevPixels],
   );
 
   useEffect(() => {
@@ -172,7 +176,7 @@ export const HitDistribution: React.FC<HitDistributionProps> = () => {
     if (!isDragging) {
       setCanvasKey((prev) => prev + 1);
     }
-  }, [showDartboardColors, targetPosition, gaussianStddev, isDragging]);
+  }, [showDartboardColors, targetPosition, gaussianStddevPixels, isDragging]);
 
   return (
     <div style={{ display: "flex", gap: "10px" }}>
@@ -308,8 +312,8 @@ export const HitDistribution: React.FC<HitDistributionProps> = () => {
         </div>
 
         <GaussianDistributionControls
-          gaussianStddevPixels={gaussianStddev}
-          onGaussianStddevPixelsChange={setGaussianStddev}
+          gaussianStddevPixels={gaussianStddevPixels}
+          onGaussianStddevPixelsChange={(pixels) => setGaussianStddevMm(pixelsToMm(pixels, width))}
         />
 
         <TargetPositionDisplay

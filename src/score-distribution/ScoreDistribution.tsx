@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { CanvasVisualization } from "../common/CanvasVisualization";
 import { getDartboardColor } from "../dartboard/dartboard-colors";
-import { makeDartboard } from "../dartboard/dartboard-definition";
+import { makeDartboard, mmToPixels, pixelsToMm } from "../dartboard/dartboard-definition";
 import { drawRadialScores } from "../dartboard/dartboard-labels";
 import { GaussianDistributionControls } from "../expected-score/GaussianDistributionControls";
 import { TargetIndicator } from "../expected-score/TargetIndicator";
@@ -26,7 +26,10 @@ export const ScoreDistribution: React.FC<ScoreDistributionProps> = () => {
   const [segmentProbabilities, setSegmentProbabilities] = useState<SegmentProbability[]>([]);
   const [showDartboardColors, setShowDartboardColors] = useState(false);
   const [targetPosition, setTargetPosition] = useState({ x: 0, y: 0 });
-  const [gaussianStddev, setGaussianStddev] = useState(55); // ~50mm
+  const [gaussianStddevMm, setGaussianStddevMm] = useState(50); // 50mm default
+
+  // Convert mm to pixels for calculations
+  const gaussianStddevPixels = mmToPixels(gaussianStddevMm, width);
 
   const runScoreDistribution = useCallback(
     async (canvas: HTMLCanvasElement) => {
@@ -42,8 +45,8 @@ export const ScoreDistribution: React.FC<ScoreDistributionProps> = () => {
         height: width,
         targetX: targetPosition.x,
         targetY: targetPosition.y,
-        sigmaX: gaussianStddev,
-        sigmaY: gaussianStddev,
+        sigmaX: gaussianStddevPixels,
+        sigmaY: gaussianStddevPixels,
       });
 
       // Process segment results and create probability table
@@ -169,8 +172,8 @@ export const ScoreDistribution: React.FC<ScoreDistributionProps> = () => {
       const targetData = new Float32Array([
         targetPosition.x,
         targetPosition.y,
-        gaussianStddev,
-        gaussianStddev,
+        gaussianStddevPixels,
+        gaussianStddevPixels,
       ]);
       const targetBuffer = device.createBuffer({
         size: Math.max(targetData.byteLength, 16),
@@ -257,7 +260,7 @@ export const ScoreDistribution: React.FC<ScoreDistributionProps> = () => {
       const labelRadius = width * 0.45; // Place labels outside the dartboard
       drawRadialScores(ctx, centerX, centerY, labelRadius, 14, "#fff");
     },
-    [showDartboardColors, targetPosition, gaussianStddev],
+    [showDartboardColors, targetPosition, gaussianStddevPixels],
   );
 
   useEffect(() => {
@@ -269,7 +272,7 @@ export const ScoreDistribution: React.FC<ScoreDistributionProps> = () => {
     if (!isDragging) {
       setCanvasKey((prev) => prev + 1);
     }
-  }, [showDartboardColors, targetPosition, gaussianStddev, isDragging]);
+  }, [showDartboardColors, targetPosition, gaussianStddevPixels, isDragging]);
 
   return (
     <div style={{ display: "flex", gap: "10px" }}>
@@ -450,8 +453,8 @@ export const ScoreDistribution: React.FC<ScoreDistributionProps> = () => {
         </div>
 
         <GaussianDistributionControls
-          gaussianStddevPixels={gaussianStddev}
-          onGaussianStddevPixelsChange={setGaussianStddev}
+          gaussianStddevPixels={gaussianStddevPixels}
+          onGaussianStddevPixelsChange={(pixels) => setGaussianStddevMm(pixelsToMm(pixels, width))}
         />
 
         <TargetPositionDisplay

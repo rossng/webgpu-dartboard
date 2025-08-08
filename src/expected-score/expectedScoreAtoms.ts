@@ -3,11 +3,19 @@ import {
   ExpectedScoreState, 
   DisplayOptions, 
   TargetPosition, 
-  expectedScoreStore 
+  expectedScoreStore,
+  EXPECTED_SCORE_CANVAS_SIZE
 } from "./ExpectedScoreStore";
+import { mmToPixels } from "../dartboard/dartboard-definition";
+
+// Constants for conversion
+const DEFAULT_STDDEV_MM = 50;
+
+// Calculate pixel value from mm
+const defaultStddevPixels = mmToPixels(DEFAULT_STDDEV_MM, EXPECTED_SCORE_CANVAS_SIZE);
 
 // Base atoms for input parameters
-export const gaussianStddevAtom = atom<number>(55); // ~50mm
+export const gaussianStddevAtom = atom<number>(defaultStddevPixels); // 50mm default in pixels
 
 export const targetPositionAtom = atom<TargetPosition>({ x: 0, y: 0 });
 

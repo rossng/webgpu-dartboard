@@ -3,7 +3,7 @@ import { makeDartboard } from "../dartboard/dartboard-definition";
 import { drawRadialScores, drawSegmentBoundaries } from "../dartboard/dartboard-labels";
 import { getDevice } from "../webgpu/util";
 
-const EXPECTED_SCORE_CANVAS_SIZE = 500;
+export const EXPECTED_SCORE_CANVAS_SIZE = 500;
 import { getViridisColor } from "../webgpu/viridis";
 
 export interface ExpectedScoreState {

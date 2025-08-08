@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from "react";
-import { REGULATION_BOARD, normaliseDartboard } from "../dartboard/dartboard-definition";
+import { mmToPixels, pixelsToMm, REGULATION_BOARD } from "../dartboard/dartboard-definition";
 
 interface GaussianDistributionControlsProps {
   gaussianStddevPixels: number;
@@ -16,22 +16,15 @@ export const GaussianDistributionControls: React.FC<GaussianDistributionControls
   onInteractionEnd,
   canvasWidth = 1000,
 }) => {
-  const normalizedDartboard = normaliseDartboard(REGULATION_BOARD);
-  const centerToOuterDoubleNormalized = normalizedDartboard.centerToOuterDouble;
-  const centerToOuterDoubleMm = REGULATION_BOARD.centerToOuterDouble;
-
-  const pixelToMm = centerToOuterDoubleMm / (centerToOuterDoubleNormalized * (canvasWidth / 2));
-  const mmToPixel = 1 / pixelToMm;
-
   // Current value in mm
-  const gaussianStddevMm = gaussianStddevPixels * pixelToMm;
+  const gaussianStddevMm = pixelsToMm(gaussianStddevPixels, canvasWidth);
 
   // Track interaction state
   const isDraggingRef = useRef(false);
 
   // Handle slider change - convert mm to pixels
   const handleSliderChange = (mmValue: number) => {
-    const pixelValue = mmValue * mmToPixel;
+    const pixelValue = mmToPixels(mmValue, canvasWidth);
     onGaussianStddevPixelsChange(pixelValue);
   };
 
