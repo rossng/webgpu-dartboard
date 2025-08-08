@@ -1,25 +1,25 @@
-import { makeDartboard } from "../dartboard/dartboard-definition";
+import { makeDartboard, mmToPixels } from "../dartboard/dartboard-definition";
 import { getDevice } from "../webgpu/util";
 import optimalTargetReduceShader from "./optimal-target-reduce.wgsl?raw";
 import optimalTargetShader from "./optimal-target.wgsl?raw";
 
 export interface OptimalTargetResult {
-  sigma: number;
-  x: number;
-  y: number;
+  sigma: number; // Sigma in mm
+  x: number; // X position in computational canvas pixels
+  y: number; // Y position in computational canvas pixels
 }
 
 export interface OptimalTargetState {
   results: OptimalTargetResult[];
   isComputing: boolean;
-  currentSigma: number;
+  currentSigma: number; // Current sigma in mm
   isInitialized: boolean;
 }
 
 export interface SigmaRange {
-  min: number;
-  max: number;
-  step: number;
+  min: number; // Minimum sigma in mm
+  max: number; // Maximum sigma in mm
+  step: number; // Step size in mm
 }
 
 /**
@@ -159,7 +159,7 @@ export class OptimalTargetStore {
       return;
 
     try {
-      // Generate sigma values
+      // Generate sigma values in mm
       const sigmaValues: number[] = [];
       for (let sigma = sigmaRange.min; sigma <= sigmaRange.max; sigma += sigmaRange.step) {
         sigmaValues.push(sigma);
@@ -167,11 +167,11 @@ export class OptimalTargetStore {
 
       const results: OptimalTargetResult[] = [];
 
-      // Compute optimal position for each sigma value
-      for (const sigma of sigmaValues) {
-        const position = await this.computeSingleOptimalTarget(sigma);
+      // Compute optimal position for each sigma value (sigma is in mm)
+      for (const sigmaMm of sigmaValues) {
+        const position = await this.computeSingleOptimalTarget(sigmaMm);
         results.push({
-          sigma,
+          sigma: sigmaMm, // Store sigma in mm
           x: position.x,
           y: position.y,
         });
@@ -187,7 +187,7 @@ export class OptimalTargetStore {
     }
   }
 
-  private async computeSingleOptimalTarget(sigma: number): Promise<{ x: number; y: number }> {
+  private async computeSingleOptimalTarget(sigmaMm: number): Promise<{ x: number; y: number }> {
     if (
       !this.device ||
       !this.findOptimalPositionPipeline ||
@@ -200,11 +200,14 @@ export class OptimalTargetStore {
       throw new Error("Store not initialized");
     }
 
-    // Update uniform data with current sigma
+    // Convert sigma from mm to pixels for the computational canvas
+    const sigmaPixels = mmToPixels(sigmaMm, this.canvasSize);
+
+    // Update uniform data with current sigma in pixels
     const uniformData = new Float32Array([
       this.canvasSize,
       this.canvasSize,
-      sigma,
+      sigmaPixels,
       this.numWorkgroups,
     ]);
     this.device.queue.writeBuffer(this.uniformBuffer, 0, uniformData);
@@ -272,14 +275,14 @@ export class OptimalTargetStore {
 
   getOptimalTargetForSigma(
     results: OptimalTargetResult[],
-    sigma: number,
+    sigmaMm: number,
   ): OptimalTargetResult | null {
-    // Find the closest sigma value in results
+    // Find the closest sigma value in results (both are in mm)
     let closestResult: OptimalTargetResult | null = null;
     let closestDistance = Infinity;
 
     for (const result of results) {
-      const distance = Math.abs(result.sigma - sigma);
+      const distance = Math.abs(result.sigma - sigmaMm);
       if (distance < closestDistance) {
         closestDistance = distance;
         closestResult = result;
@@ -291,7 +294,7 @@ export class OptimalTargetStore {
 
   renderToCanvas(
     canvas: HTMLCanvasElement,
-    currentSigma: number,
+    currentSigmaMm: number,
     optimalPosition: { x: number; y: number } | null,
   ): void {
     const ctx = canvas.getContext("2d");
@@ -357,7 +360,7 @@ export class OptimalTargetStore {
     // Add current sigma value as text
     ctx.fillStyle = "white";
     ctx.font = "14px Arial";
-    ctx.fillText(`σ = ${currentSigma.toFixed(1)}`, 10, 20);
+    ctx.fillText(`σ = ${currentSigmaMm.toFixed(1)} mm`, 10, 20);
     ctx.fillText(`Resolution: ${this.canvasSize}x${this.canvasSize}`, 10, 40);
     
     if (optimalPosition) {

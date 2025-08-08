@@ -7,32 +7,32 @@ const storeAtom = atom<OptimalTargetStore | null>(null);
 // Canvas size atom - can be updated by the component
 export const canvasSizeAtom = atom<number>(250);
 
-// Base atoms for input parameters
+// Base atoms for input parameters (in mm)
 export const sigmaRangeAtom = atom<SigmaRange>({
   min: 1,
   max: 100,
   step: 5,
 });
 
-export const currentSigmaAtom = atom<number>(50);
+export const currentSigmaMmAtom = atom<number>(50); // Default 50mm standard deviation
 
 // Internal state atom
 export const optimalTargetStateAtom = atom<OptimalTargetState>({
   results: [],
   isComputing: false,
-  currentSigma: 50,
+  currentSigma: 50, // This will be in mm
   isInitialized: false,
 });
 
 // Derived atom for current optimal position
 export const currentOptimalPositionAtom = atom((get) => {
   const state = get(optimalTargetStateAtom);
-  const currentSigma = get(currentSigmaAtom);
+  const currentSigmaMm = get(currentSigmaMmAtom);
   const store = get(storeAtom);
   
   if (!store) return null;
   
-  return store.getOptimalTargetForSigma(state.results, currentSigma);
+  return store.getOptimalTargetForSigma(state.results, currentSigmaMm);
 });
 
 // Action to initialize the store with the current canvas size
@@ -62,7 +62,7 @@ export const initializeStoreAtom = atom(null, async (get, set) => {
     set(optimalTargetStateAtom, {
       results: [],
       isComputing: false,
-      currentSigma: get(currentSigmaAtom),
+      currentSigma: get(currentSigmaMmAtom),
       isInitialized: false,
     });
   } else {
@@ -97,13 +97,13 @@ export const computeAllOptimalTargetsAtom = atom(null, async (get, set) => {
 });
 
 export const renderToCanvasAtom = atom(null, (get, _set, canvas: HTMLCanvasElement) => {
-  const currentSigma = get(currentSigmaAtom);
+  const currentSigmaMm = get(currentSigmaMmAtom);
   const optimalPosition = get(currentOptimalPositionAtom);
   const store = get(storeAtom);
   
   if (!store) return;
   
-  store.renderToCanvas(canvas, currentSigma, optimalPosition);
+  store.renderToCanvas(canvas, currentSigmaMm, optimalPosition);
 });
 
 // Cleanup atom to be called on unmount

@@ -1,13 +1,14 @@
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
-import React, { useCallback, useEffect, useRef } from "react";
+import React, { useCallback, useEffect, useMemo, useRef } from "react";
 import { CanvasVisualization } from "../common/CanvasVisualization";
 import { LoadingSpinner } from "../common/LoadingSpinner";
+import { pixelsToMm } from "../dartboard/dartboard-definition";
 import {
   canvasSizeAtom,
   cleanupStoreAtom,
   computeAllOptimalTargetsAtom,
   currentOptimalPositionAtom,
-  currentSigmaAtom,
+  currentSigmaMmAtom,
   initializeStoreAtom,
   optimalTargetStateAtom,
   renderToCanvasAtom,
@@ -20,7 +21,7 @@ interface OptimalTargetProps {
 export const OptimalTarget: React.FC<OptimalTargetProps> = ({ defaultCanvasSize = 250 }) => {
   // Jotai atoms
   const state = useAtomValue(optimalTargetStateAtom);
-  const [currentSigma, setCurrentSigma] = useAtom(currentSigmaAtom);
+  const [currentSigmaMm, setCurrentSigmaMm] = useAtom(currentSigmaMmAtom);
   const [canvasSize, setCanvasSize] = useAtom(canvasSizeAtom);
   const currentOptimalPosition = useAtomValue(currentOptimalPositionAtom);
 
@@ -47,11 +48,16 @@ export const OptimalTarget: React.FC<OptimalTargetProps> = ({ defaultCanvasSize 
   // Compute all targets after initialization (only once per store instance)
   useEffect(() => {
     // Only start computation if store is ready and we haven't computed yet
-    if (!state.isComputing && !state.isInitialized && state.results.length === 0 && !computationStartedRef.current) {
-      console.log("Starting computation from effect", { 
-        isComputing: state.isComputing, 
-        isInitialized: state.isInitialized, 
-        resultsLength: state.results.length 
+    if (
+      !state.isComputing &&
+      !state.isInitialized &&
+      state.results.length === 0 &&
+      !computationStartedRef.current
+    ) {
+      console.log("Starting computation from effect", {
+        isComputing: state.isComputing,
+        isInitialized: state.isInitialized,
+        resultsLength: state.results.length,
       });
       computationStartedRef.current = true;
       computeAllOptimalTargets();
@@ -70,7 +76,7 @@ export const OptimalTarget: React.FC<OptimalTargetProps> = ({ defaultCanvasSize 
     if (canvasRef.current) {
       renderToCanvas(canvasRef.current);
     }
-  }, [currentSigma, state.results, renderToCanvas]);
+  }, [currentSigmaMm, state.results, renderToCanvas]);
 
   const handleCanvasReady = useCallback(
     (canvas: HTMLCanvasElement) => {
@@ -83,10 +89,39 @@ export const OptimalTarget: React.FC<OptimalTargetProps> = ({ defaultCanvasSize 
 
   const handleSigmaChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
-      setCurrentSigma(Number(e.target.value));
+      setCurrentSigmaMm(Number(e.target.value));
     },
-    [setCurrentSigma],
+    [setCurrentSigmaMm],
   );
+
+  // Convert pixel coordinates to mm from center
+  const optimalPositionMm = useMemo(() => {
+    if (!currentOptimalPosition) return null;
+
+    // The optimal position is in computational canvas coordinates (0 to canvasSize)
+    // We need to:
+    // 1. Convert from computational canvas coords to display canvas coords
+    // 2. Find distance from center
+    // 3. Convert to mm
+
+    // Scale from computational resolution to display resolution (500x500)
+    const displayCanvasSize = 500;
+    const scale = displayCanvasSize / canvasSize;
+    const displayX = currentOptimalPosition.x * scale;
+    const displayY = currentOptimalPosition.y * scale;
+
+    // Calculate distance from center in display pixels
+    const centerX = displayCanvasSize / 2;
+    const centerY = displayCanvasSize / 2;
+    const xFromCenter = displayX - centerX;
+    const yFromCenter = displayY - centerY;
+
+    // Convert to mm using display canvas size
+    const xMm = pixelsToMm(xFromCenter, displayCanvasSize);
+    const yMm = pixelsToMm(yFromCenter, displayCanvasSize);
+
+    return { x: xMm, y: yMm };
+  }, [currentOptimalPosition, canvasSize]);
 
   return (
     <div style={{ display: "flex" }}>
@@ -98,7 +133,7 @@ export const OptimalTarget: React.FC<OptimalTargetProps> = ({ defaultCanvasSize 
           changes.
         </p>
 
-        <div style={{ display: "flex", alignItems: "center", gap: "20px" }}>
+        <div style={{ display: "flex", alignItems: "center" }}>
           <div style={{ position: "relative", display: "inline-block" }}>
             {state.isComputing && <LoadingSpinner />}
             <CanvasVisualization
@@ -109,87 +144,27 @@ export const OptimalTarget: React.FC<OptimalTargetProps> = ({ defaultCanvasSize 
             />
           </div>
 
-          <div style={{ minWidth: "200px" }}>
-            <h3>Controls</h3>
-            
-            {/* Canvas Size Control */}
-            <div style={{ marginBottom: "20px" }}>
-              <label style={{ display: "block", marginBottom: "5px", fontWeight: "bold" }}>
-                Computation Resolution: {canvasSize}x{canvasSize}
-              </label>
-              <select
-                value={canvasSize}
-                onChange={(e) => setCanvasSize(Number(e.target.value))}
-                style={{
-                  width: "100%",
-                  padding: "5px",
-                  fontSize: "14px",
-                  borderRadius: "4px",
-                  border: "1px solid #ddd",
-                }}
-                disabled={state.isComputing}
-              >
-                <option value={100}>100x100 (Fast)</option>
-                <option value={200}>200x200 (Medium)</option>
-                <option value={250}>250x250 (Default)</option>
-                <option value={300}>300x300 (High)</option>
-                <option value={500}>500x500 (Very High)</option>
-              </select>
-              <p style={{ fontSize: "12px", color: "#666", marginTop: "5px" }}>
-                Display is always 500x500px. This controls computation accuracy.
-              </p>
-            </div>
-            
-            {/* Sigma Control */}
-            <div style={{ marginBottom: "10px" }}>
-              <label style={{ display: "block", marginBottom: "5px", fontWeight: "bold" }}>
-                Sigma: {currentSigma.toFixed(1)}
-              </label>
-              <input
-                type="range"
-                min="1"
-                max="100"
-                step="1"
-                value={currentSigma}
-                onChange={handleSigmaChange}
-                style={{
-                  width: "100%",
-                  height: "8px",
-                  borderRadius: "4px",
-                  background: "#ddd",
-                  outline: "none",
-                  cursor: "pointer",
-                }}
-                disabled={state.isComputing || !state.isInitialized}
-              />
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  fontSize: "12px",
-                  color: "#666",
-                }}
-              >
-                <span>1</span>
-                <span>100</span>
+          {optimalPositionMm && (
+            <div
+              style={{
+                marginLeft: "40px",
+                minWidth: "150px",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "start",
+                justifyContent: "center",
+                height: 500,
+              }}
+            >
+              <div style={{ fontSize: "12px", color: "#666", marginBottom: "8px" }}>
+                Distance from center
+              </div>
+              <div style={{ fontSize: "24px", fontWeight: "bold" }}>
+                <div>X: {optimalPositionMm.x.toFixed(1)} mm</div>
+                <div>Y: {optimalPositionMm.y.toFixed(1)} mm</div>
               </div>
             </div>
-
-            {currentOptimalPosition && (
-              <div
-                style={{
-                  marginTop: "20px",
-                  padding: "10px",
-                  backgroundColor: "#f5f5f5",
-                  borderRadius: "4px",
-                }}
-              >
-                <h4 style={{ margin: "0 0 10px 0" }}>Current Optimal Position</h4>
-                <div>X: {currentOptimalPosition.x.toFixed(1)}</div>
-                <div>Y: {currentOptimalPosition.y.toFixed(1)}</div>
-              </div>
-            )}
-          </div>
+          )}
         </div>
 
         {state.isComputing && (
@@ -217,6 +192,87 @@ export const OptimalTarget: React.FC<OptimalTargetProps> = ({ defaultCanvasSize 
             </p>
           </div>
         )}
+      </div>
+
+      {/* Options sidebar */}
+      <div
+        style={{
+          width: "300px",
+          padding: "20px",
+          backgroundColor: "#f8f8f8",
+          borderLeft: "1px solid #ddd",
+          overflow: "auto",
+        }}
+      >
+        <h3>Options</h3>
+
+        {/* Computation Resolution Control */}
+        <div style={{ marginTop: "20px" }}>
+          <label style={{ display: "block", marginBottom: "5px", fontWeight: "bold" }}>
+            Resolution
+          </label>
+          <select
+            value={canvasSize}
+            onChange={(e) => setCanvasSize(Number(e.target.value))}
+            style={{
+              width: "100%",
+              padding: "5px",
+              fontSize: "14px",
+              borderRadius: "4px",
+              border: "1px solid #ddd",
+            }}
+            disabled={state.isComputing}
+          >
+            <option value={100}>100x100 (Fast)</option>
+            <option value={200}>200x200 (Medium)</option>
+            <option value={250}>250x250 (Default)</option>
+            <option value={300}>300x300 (High)</option>
+            <option value={500}>500x500 (Very High)</option>
+          </select>
+          <p style={{ fontSize: "14px", color: "#666", marginTop: "8px" }}>
+            Higher resolution provides more accurate computation but takes longer to process.
+          </p>
+        </div>
+
+        {/* Sigma Control */}
+        <div style={{ marginTop: "20px" }}>
+          <label style={{ display: "block", marginBottom: "8px", fontWeight: "bold" }}>
+            Standard Deviation (σ): {currentSigmaMm.toFixed(1)} mm
+          </label>
+          <input
+            type="range"
+            min="1"
+            max="100"
+            step="1"
+            value={currentSigmaMm}
+            onChange={handleSigmaChange}
+            style={{
+              width: "100%",
+              height: "8px",
+              borderRadius: "4px",
+              background: "#ddd",
+              outline: "none",
+              cursor: "pointer",
+            }}
+            disabled={state.isComputing || !state.isInitialized}
+          />
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              fontSize: "12px",
+              color: "#666",
+              marginTop: "4px",
+            }}
+          >
+            <span>1</span>
+            <span>100</span>
+          </div>
+          <p style={{ fontSize: "14px", color: "#666", marginTop: "8px" }}>
+            Controls the spread of the Gaussian distribution. Higher values represent less accurate
+            throws.
+          </p>
+        </div>
       </div>
     </div>
   );
