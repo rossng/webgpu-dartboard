@@ -16,6 +16,9 @@ export const sigmaRangeAtom = atom<SigmaRange>({
 
 export const currentSigmaMmAtom = atom<number>(50); // Default 50mm standard deviation
 
+// Show dartboard colors atom
+export const showDartboardColorsAtom = atom<boolean>(true);
+
 // Internal state atom
 export const optimalTargetStateAtom = atom<OptimalTargetState>({
   results: [],
@@ -99,11 +102,12 @@ export const computeAllOptimalTargetsAtom = atom(null, async (get, set) => {
 export const renderToCanvasAtom = atom(null, (get, _set, canvas: HTMLCanvasElement) => {
   const currentSigmaMm = get(currentSigmaMmAtom);
   const optimalPosition = get(currentOptimalPositionAtom);
+  const showDartboardColors = get(showDartboardColorsAtom);
   const store = get(storeAtom);
   
   if (!store) return;
   
-  store.renderToCanvas(canvas, currentSigmaMm, optimalPosition);
+  store.renderToCanvas(canvas, currentSigmaMm, optimalPosition, showDartboardColors);
 });
 
 // Cleanup atom to be called on unmount
@@ -119,5 +123,6 @@ export const cleanupStoreAtom = atom(null, (get, set) => {
       currentSigma: 50,
       isInitialized: false,
     });
+    set(showDartboardColorsAtom, true); // Reset to default
   }
 });

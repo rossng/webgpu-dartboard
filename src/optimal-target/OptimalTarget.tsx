@@ -12,6 +12,7 @@ import {
   initializeStoreAtom,
   optimalTargetStateAtom,
   renderToCanvasAtom,
+  showDartboardColorsAtom,
 } from "./optimalTargetAtoms";
 
 interface OptimalTargetProps {
@@ -23,6 +24,7 @@ export const OptimalTarget: React.FC<OptimalTargetProps> = ({ defaultCanvasSize 
   const state = useAtomValue(optimalTargetStateAtom);
   const [currentSigmaMm, setCurrentSigmaMm] = useAtom(currentSigmaMmAtom);
   const [canvasSize, setCanvasSize] = useAtom(canvasSizeAtom);
+  const [showDartboardColors, setShowDartboardColors] = useAtom(showDartboardColorsAtom);
   const currentOptimalPosition = useAtomValue(currentOptimalPositionAtom);
 
   // Action atoms
@@ -71,12 +73,12 @@ export const OptimalTarget: React.FC<OptimalTargetProps> = ({ defaultCanvasSize 
     };
   }, [cleanupStore]);
 
-  // Re-render canvas when sigma or results change
+  // Re-render canvas when sigma, results, or color mode changes
   useEffect(() => {
     if (canvasRef.current) {
       renderToCanvas(canvasRef.current);
     }
-  }, [currentSigmaMm, state.results, renderToCanvas]);
+  }, [currentSigmaMm, state.results, showDartboardColors, renderToCanvas]);
 
   const handleCanvasReady = useCallback(
     (canvas: HTMLCanvasElement) => {
@@ -205,6 +207,22 @@ export const OptimalTarget: React.FC<OptimalTargetProps> = ({ defaultCanvasSize 
         }}
       >
         <h3>Options</h3>
+
+        {/* Show Dartboard Colors Toggle */}
+        <div style={{ marginTop: "20px" }}>
+          <label style={{ display: "flex", alignItems: "center", cursor: "pointer" }}>
+            <input
+              type="checkbox"
+              checked={showDartboardColors}
+              onChange={(e) => setShowDartboardColors(e.target.checked)}
+              style={{ marginRight: "8px" }}
+            />
+            Show Dartboard Colors
+          </label>
+          <p style={{ fontSize: "14px", color: "#666", marginTop: "8px" }}>
+            Display visualizations with traditional dartboard colors (green and cream segments).
+          </p>
+        </div>
 
         {/* Computation Resolution Control */}
         <div style={{ marginTop: "20px" }}>

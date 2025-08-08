@@ -1,5 +1,8 @@
+import { getDartboardColor } from "../dartboard/dartboard-colors";
 import { makeDartboard, mmToPixels } from "../dartboard/dartboard-definition";
+import { drawRadialScores } from "../dartboard/dartboard-labels";
 import { getDevice } from "../webgpu/util";
+import { getViridisColor } from "../webgpu/viridis";
 import optimalTargetReduceShader from "./optimal-target-reduce.wgsl?raw";
 import optimalTargetShader from "./optimal-target.wgsl?raw";
 
@@ -296,6 +299,7 @@ export class OptimalTargetStore {
     canvas: HTMLCanvasElement,
     currentSigmaMm: number,
     optimalPosition: { x: number; y: number } | null,
+    showDartboardColors: boolean = true,
   ): void {
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
@@ -304,53 +308,84 @@ export class OptimalTargetStore {
     ctx.fillStyle = "#000";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // Draw dartboard visualization using the dartboard data
-    const dartboardScore = makeDartboard(this.canvasSize);
     const imageData = ctx.createImageData(canvas.width, canvas.height);
 
     // Calculate scale factor from computational resolution to display resolution
     const scaleX = canvas.width / this.canvasSize;
     const scaleY = canvas.height / this.canvasSize;
 
-    // Create a scaled visualization of the dartboard scores
-    for (let displayY = 0; displayY < canvas.height; displayY++) {
-      for (let displayX = 0; displayX < canvas.width; displayX++) {
-        // Map display coordinates back to computational coordinates
-        const compX = Math.floor(displayX / scaleX);
-        const compY = Math.floor(displayY / scaleY);
-        
-        // Ensure we don't go out of bounds
-        const clampedX = Math.min(compX, this.canvasSize - 1);
-        const clampedY = Math.min(compY, this.canvasSize - 1);
-        
-        const score = dartboardScore[clampedY * this.canvasSize + clampedX];
-        const intensity = Math.min(score / 60, 1); // Normalize to 0-1, max score is typically 60
-        
-        // Color-code by score: black (0) to green (high scores)
-        const r = Math.floor(intensity * 100);
-        const g = Math.floor(intensity * 255);
-        const b = Math.floor(intensity * 50);
-        
-        const index = (displayY * canvas.width + displayX) * 4;
-        imageData.data[index + 0] = r;     // Red
-        imageData.data[index + 1] = g;     // Green
-        imageData.data[index + 2] = b;     // Blue
-        imageData.data[index + 3] = 255;   // Alpha
+    if (showDartboardColors) {
+      // Render dartboard colors at display resolution
+      for (let displayY = 0; displayY < canvas.height; displayY++) {
+        for (let displayX = 0; displayX < canvas.width; displayX++) {
+          // Map display coordinates to normalized coordinates (-1 to 1)
+          const normX = (displayX / canvas.width) * 2 - 1;
+          const normY = (displayY / canvas.height) * 2 - 1;
+
+          // Get dartboard color at this position
+          const color = getDartboardColor(normX, normY);
+
+          const index = (displayY * canvas.width + displayX) * 4;
+
+          // Use full dartboard colors without intensity scaling
+          imageData.data[index + 0] = color.r;
+          imageData.data[index + 1] = color.g;
+          imageData.data[index + 2] = color.b;
+          imageData.data[index + 3] = 255;
+        }
+      }
+    } else {
+      // Generate dartboard scores at display resolution for viridis rendering
+      const displayDartboardScore = makeDartboard(canvas.width);
+      const maxScore = displayDartboardScore.reduce((max, score) => Math.max(max, score), 0);
+
+      for (let displayY = 0; displayY < canvas.height; displayY++) {
+        for (let displayX = 0; displayX < canvas.width; displayX++) {
+          const score = displayDartboardScore[displayY * canvas.width + displayX];
+          const intensity = maxScore > 0 ? score / maxScore : 0;
+          const color = getViridisColor(intensity);
+
+          const index = (displayY * canvas.width + displayX) * 4;
+
+          imageData.data[index + 0] = color.r;
+          imageData.data[index + 1] = color.g;
+          imageData.data[index + 2] = color.b;
+          imageData.data[index + 3] = 255;
+        }
       }
     }
 
     ctx.putImageData(imageData, 0, 0);
 
+    // Draw radial scores when using dartboard colors
+    if (showDartboardColors) {
+      const centerX = canvas.width / 2;
+      const centerY = canvas.height / 2;
+      const labelRadius = canvas.width * 0.45; // Place labels outside the dartboard
+      drawRadialScores(ctx, centerX, centerY, labelRadius, 14, "#fff");
+    }
+
     // Draw optimal position as a red dot (scaled to display coordinates)
     if (optimalPosition) {
       const displayX = optimalPosition.x * scaleX;
       const displayY = optimalPosition.y * scaleY;
-      
+
+      // Draw Gaussian standard deviation ring
+      const sigmaPixelsComp = mmToPixels(currentSigmaMm, this.canvasSize);
+      const sigmaPixelsDisplay = sigmaPixelsComp * scaleX;
+
+      ctx.strokeStyle = "rgba(255, 255, 255, 0.7)";
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.arc(displayX, displayY, sigmaPixelsDisplay, 0, 2 * Math.PI);
+      ctx.stroke();
+
+      // Draw optimal position dot
       ctx.fillStyle = "red";
       ctx.beginPath();
       ctx.arc(displayX, displayY, 4, 0, 2 * Math.PI);
       ctx.fill();
-      
+
       // Add white border for better visibility
       ctx.strokeStyle = "white";
       ctx.lineWidth = 2;
@@ -362,7 +397,7 @@ export class OptimalTargetStore {
     ctx.font = "14px Arial";
     ctx.fillText(`σ = ${currentSigmaMm.toFixed(1)} mm`, 10, 20);
     ctx.fillText(`Resolution: ${this.canvasSize}x${this.canvasSize}`, 10, 40);
-    
+
     if (optimalPosition) {
       ctx.fillText(
         `Optimal: (${optimalPosition.x.toFixed(1)}, ${optimalPosition.y.toFixed(1)})`,
