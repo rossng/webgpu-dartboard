@@ -1,0 +1,123 @@
+import { atom } from "jotai";
+import { OptimalTargetState, OptimalTargetStore, SigmaRange } from "./OptimalTargetStore";
+
+// Store instance atom - creates a new store instance per component
+const storeAtom = atom<OptimalTargetStore | null>(null);
+
+// Canvas size atom - can be updated by the component
+export const canvasSizeAtom = atom<number>(250);
+
+// Base atoms for input parameters
+export const sigmaRangeAtom = atom<SigmaRange>({
+  min: 1,
+  max: 100,
+  step: 5,
+});
+
+export const currentSigmaAtom = atom<number>(50);
+
+// Internal state atom
+export const optimalTargetStateAtom = atom<OptimalTargetState>({
+  results: [],
+  isComputing: false,
+  currentSigma: 50,
+  isInitialized: false,
+});
+
+// Derived atom for current optimal position
+export const currentOptimalPositionAtom = atom((get) => {
+  const state = get(optimalTargetStateAtom);
+  const currentSigma = get(currentSigmaAtom);
+  const store = get(storeAtom);
+  
+  if (!store) return null;
+  
+  return store.getOptimalTargetForSigma(state.results, currentSigma);
+});
+
+// Action to initialize the store with the current canvas size
+export const initializeStoreAtom = atom(null, async (get, set) => {
+  const canvasSize = get(canvasSizeAtom);
+  let store = get(storeAtom);
+  
+  // Check if we need to create a new store (either doesn't exist or canvas size changed)
+  if (!store || store.getCanvasSize() !== canvasSize) {
+    console.log("Creating new store", { 
+      hasStore: !!store, 
+      oldCanvasSize: store?.getCanvasSize(), 
+      newCanvasSize: canvasSize 
+    });
+    
+    // Clean up old store if it exists
+    if (store) {
+      set(storeAtom, null);
+    }
+    
+    // Create new store with current canvas size
+    store = new OptimalTargetStore(canvasSize);
+    set(storeAtom, store);
+    await store.initialize();
+    
+    // Reset state when creating new store
+    set(optimalTargetStateAtom, {
+      results: [],
+      isComputing: false,
+      currentSigma: get(currentSigmaAtom),
+      isInitialized: false,
+    });
+  } else {
+    console.log("Store already exists with correct canvas size", canvasSize);
+  }
+});
+
+// Action atoms for triggering computations
+export const computeAllOptimalTargetsAtom = atom(null, async (get, set) => {
+  const state = get(optimalTargetStateAtom);
+  
+  // Prevent multiple simultaneous computations
+  if (state.isComputing) {
+    console.log("Computation already in progress, skipping");
+    return;
+  }
+
+  const sigmaRange = get(sigmaRangeAtom);
+  const store = get(storeAtom);
+  
+  if (!store) {
+    throw new Error("Store not initialized");
+  }
+
+  console.log("Starting computation with canvas size:", store.getCanvasSize());
+
+  const updateState = (updates: Partial<OptimalTargetState>) => {
+    set(optimalTargetStateAtom, (prev) => ({ ...prev, ...updates }));
+  };
+
+  await store.computeAllOptimalTargets(sigmaRange, updateState);
+});
+
+export const renderToCanvasAtom = atom(null, (get, _set, canvas: HTMLCanvasElement) => {
+  const currentSigma = get(currentSigmaAtom);
+  const optimalPosition = get(currentOptimalPositionAtom);
+  const store = get(storeAtom);
+  
+  if (!store) return;
+  
+  store.renderToCanvas(canvas, currentSigma, optimalPosition);
+});
+
+// Cleanup atom to be called on unmount
+export const cleanupStoreAtom = atom(null, (get, set) => {
+  const store = get(storeAtom);
+  
+  if (store) {
+    // Clean up any resources if needed
+    set(storeAtom, null);
+    set(optimalTargetStateAtom, {
+      results: [],
+      isComputing: false,
+      currentSigma: 50,
+      isInitialized: false,
+    });
+  }
+});

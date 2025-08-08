@@ -2,13 +2,15 @@ import React, { useState } from "react";
 import { Dartboard } from "../dartboard/Dartboard";
 import { ExpectedScore } from "../expected-score/ExpectedScore";
 import { HitDistribution } from "../hit-distribution/HitDistribution";
+import { OptimalTarget } from "../optimal-target/OptimalTarget";
 import { ScoreDistribution } from "../score-distribution/ScoreDistribution";
 
 type TabName =
   | "hit-distribution"
   | "score-distribution"
   | "dartboard"
-  | "expected-score";
+  | "expected-score"
+  | "optimal-target";
 
 interface Tab {
   id: TabName;
@@ -21,6 +23,7 @@ const tabs: Tab[] = [
   { id: "hit-distribution", label: "Hit Distribution", component: HitDistribution },
   { id: "score-distribution", label: "Score Distribution", component: ScoreDistribution },
   { id: "expected-score", label: "Expected Score", component: ExpectedScore },
+  { id: "optimal-target", label: "Optimal Target", component: OptimalTarget },
 ];
 
 export const App: React.FC = () => {
