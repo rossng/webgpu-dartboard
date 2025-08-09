@@ -4,6 +4,7 @@ import { ExpectedScore } from "../expected-score/ExpectedScore";
 import { HitDistribution } from "../hit-distribution/HitDistribution";
 import { OptimalTarget } from "../optimal-target/OptimalTarget";
 import { ScoreDistribution } from "../score-distribution/ScoreDistribution";
+import { WebGPUBanner } from "./WebGPUBanner";
 
 type TabName =
   | "hit-distribution"
@@ -31,15 +32,23 @@ export const App: React.FC = () => {
     const savedTab = localStorage.getItem("webgpu-dartboard-active-tab");
     return (savedTab as TabName) || "dartboard";
   });
+  const [webGPUSupported, setWebGPUSupported] = useState(true);
 
   useEffect(() => {
     localStorage.setItem("webgpu-dartboard-active-tab", activeTab);
   }, [activeTab]);
 
+  useEffect(() => {
+    if (!navigator.gpu) {
+      setWebGPUSupported(false);
+    }
+  }, []);
+
   const ActiveComponent = tabs.find((tab) => tab.id === activeTab)?.component || HitDistribution;
 
   return (
     <div className="h-screen font-sans p-5 overflow-auto">
+      {!webGPUSupported && <WebGPUBanner />}
       <div className="flex items-center justify-between mb-5">
         <h1 className="m-0 text-2xl font-bold">Where should I aim?</h1>
         <a

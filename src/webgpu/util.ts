@@ -1,6 +1,5 @@
 export function fail(msg: string) {
-  // eslint-disable-next-line no-alert
-  alert(msg);
+  console.error(msg);
 }
 
 export const width = 1000;
