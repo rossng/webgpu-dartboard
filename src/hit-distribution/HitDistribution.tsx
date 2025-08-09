@@ -267,19 +267,6 @@ export const HitDistribution: React.FC<HitDistributionProps> = () => {
                 </tbody>
               </table>
             </div>
-            <div
-              style={{
-                marginTop: "10px",
-                fontSize: "12px",
-                color: "#666",
-                textAlign: "center",
-              }}
-            >
-              <div style={{ marginTop: "4px" }}>
-                Total Probability:{" "}
-                {segmentProbabilities.reduce((sum, seg) => sum + seg.probability, 0).toFixed(2)}
-              </div>
-            </div>
           </div>
         )}
       </div>
