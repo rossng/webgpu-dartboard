@@ -3,13 +3,13 @@ import React, { useCallback, useEffect, useRef } from "react";
 import { CanvasVisualization } from "../common/CanvasVisualization";
 import { LoadingSpinner } from "../common/LoadingSpinner";
 import { ViridisColorScale } from "../common/ViridisColorScale";
+import { gaussianStddevMmAtom, getGaussianStddevPixels } from "../shared/gaussianStddevAtom";
 import {
   cleanupStoreAtom,
   computeExpectedScoreAtom,
   debouncedComputeExpectedScoreAtom,
   expectedScoreAtTargetAtom,
   expectedScoreStateAtom,
-  gaussianStddevAtom,
   initializeStoreAtom,
   isUserInteractingAtom,
   renderToCanvasAtom,
@@ -26,9 +26,12 @@ export const ExpectedScore: React.FC<ExpectedScoreProps> = () => {
   // Jotai atoms
   const state = useAtomValue(expectedScoreStateAtom);
   const expectedScoreAtTarget = useAtomValue(expectedScoreAtTargetAtom);
-  const [gaussianStddev, setGaussianStddev] = useAtom(gaussianStddevAtom);
+  const [gaussianStddevMm, setGaussianStddevMm] = useAtom(gaussianStddevMmAtom);
   const [targetPosition, setTargetPosition] = useAtom(targetPositionAtom);
   const [isUserInteracting, setIsUserInteracting] = useAtom(isUserInteractingAtom);
+  
+  // Convert mm to pixels for the component
+  const gaussianStddevPixels = getGaussianStddevPixels(gaussianStddevMm, EXPECTED_SCORE_CANVAS_SIZE);
 
   // Action atoms
   const initializeStore = useSetAtom(initializeStoreAtom);
@@ -55,7 +58,7 @@ export const ExpectedScore: React.FC<ExpectedScoreProps> = () => {
   useEffect(() => {
     if (!canvasRef.current) return;
     debouncedComputeExpectedScore();
-  }, [gaussianStddev, debouncedComputeExpectedScore]);
+  }, [gaussianStddevMm, debouncedComputeExpectedScore]);
 
   // Re-render canvas when state changes
   useEffect(() => {
@@ -74,10 +77,11 @@ export const ExpectedScore: React.FC<ExpectedScoreProps> = () => {
 
   // Handle gaussian slider interactions
   const handleGaussianChange = useCallback(
-    (value: number) => {
-      setGaussianStddev(value);
+    (pixels: number) => {
+      const mm = pixels * (340 / EXPECTED_SCORE_CANVAS_SIZE); // Convert pixels back to mm
+      setGaussianStddevMm(mm);
     },
-    [setGaussianStddev],
+    [setGaussianStddevMm],
   );
 
   const handleGaussianInteractionStart = useCallback(() => {
@@ -158,7 +162,7 @@ export const ExpectedScore: React.FC<ExpectedScoreProps> = () => {
         <h3 className="text-lg font-semibold mb-4">Options</h3>
 
         <GaussianDistributionControls
-          gaussianStddevPixels={gaussianStddev}
+          gaussianStddevPixels={gaussianStddevPixels}
           onGaussianStddevPixelsChange={handleGaussianChange}
           onInteractionStart={handleGaussianInteractionStart}
           onInteractionEnd={handleGaussianInteractionEnd}

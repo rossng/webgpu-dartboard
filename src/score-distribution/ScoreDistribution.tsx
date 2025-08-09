@@ -1,12 +1,15 @@
+import { useAtom } from "jotai";
 import React, { useCallback, useEffect, useState } from "react";
 import { CanvasVisualization } from "../common/CanvasVisualization";
 import { getDartboardColor } from "../dartboard/dartboard-colors";
-import { makeDartboard, mmToPixels, pixelsToMm } from "../dartboard/dartboard-definition";
+import { makeDartboard, pixelsToMm } from "../dartboard/dartboard-definition";
 import { drawRadialScores } from "../dartboard/dartboard-labels";
 import { GaussianDistributionControls } from "../expected-score/GaussianDistributionControls";
 import { TargetIndicator } from "../expected-score/TargetIndicator";
 import { TargetPositionDisplay } from "../expected-score/TargetPositionDisplay";
 import { runSegmentProbabilitiesShader } from "../hit-distribution/segment-probabilities";
+import { gaussianStddevMmAtom, getGaussianStddevPixels } from "../shared/gaussianStddevAtom";
+import { targetPositionAtom } from "../shared/targetPositionAtom";
 import { getDevice, width } from "../webgpu/util";
 import { getViridisColor } from "../webgpu/viridis";
 import weightedGrid from "./weighted-grid.wgsl?raw";
@@ -25,11 +28,11 @@ export const ScoreDistribution: React.FC<ScoreDistributionProps> = () => {
   const [isDragging, setIsDragging] = useState(false);
   const [segmentProbabilities, setSegmentProbabilities] = useState<SegmentProbability[]>([]);
   const [showDartboardColors, setShowDartboardColors] = useState(false);
-  const [targetPosition, setTargetPosition] = useState({ x: 0, y: 0 });
-  const [gaussianStddevMm, setGaussianStddevMm] = useState(50); // 50mm default
+  const [targetPosition, setTargetPosition] = useAtom(targetPositionAtom);
+  const [gaussianStddevMm, setGaussianStddevMm] = useAtom(gaussianStddevMmAtom);
 
   // Convert mm to pixels for calculations
-  const gaussianStddevPixels = mmToPixels(gaussianStddevMm, width);
+  const gaussianStddevPixels = getGaussianStddevPixels(gaussianStddevMm, width);
 
   const runScoreDistribution = useCallback(
     async (canvas: HTMLCanvasElement) => {

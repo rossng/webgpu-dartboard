@@ -1,4 +1,5 @@
 import { atom } from "jotai";
+import { gaussianStddevMmAtom } from "../shared/gaussianStddevAtom";
 import { OptimalTargetState, OptimalTargetStore, SigmaRange } from "./OptimalTargetStore";
 
 // Store instance atom - creates a new store instance per component
@@ -14,7 +15,8 @@ export const sigmaRangeAtom = atom<SigmaRange>({
   step: 5,
 });
 
-export const currentSigmaMmAtom = atom<number>(50); // Default 50mm standard deviation
+// Use the shared gaussian stddev atom
+export const currentSigmaMmAtom = gaussianStddevMmAtom;
 
 // Show dartboard colors atom
 export const showDartboardColorsAtom = atom<boolean>(true);

@@ -1,5 +1,6 @@
 import { atom } from "jotai";
-import { mmToPixels } from "../dartboard/dartboard-definition";
+import { gaussianStddevMmAtom, getGaussianStddevPixels } from "../shared/gaussianStddevAtom";
+import { targetPositionAtom } from "../shared/targetPositionAtom";
 import {
   EXPECTED_SCORE_CANVAS_SIZE,
   ExpectedScoreState,
@@ -7,16 +8,8 @@ import {
   expectedScoreStore,
 } from "./ExpectedScoreStore";
 
-// Constants for conversion
-const DEFAULT_STDDEV_MM = 50;
-
-// Calculate pixel value from mm
-const defaultStddevPixels = mmToPixels(DEFAULT_STDDEV_MM, EXPECTED_SCORE_CANVAS_SIZE);
-
-// Base atoms for input parameters
-export const gaussianStddevAtom = atom<number>(defaultStddevPixels); // 50mm default in pixels
-
-export const targetPositionAtom = atom<TargetPosition>({ x: 0, y: 0 });
+// Re-export the shared target position atom for this module
+export { targetPositionAtom };
 
 export const isUserInteractingAtom = atom<boolean>(false);
 
@@ -41,7 +34,8 @@ export const expectedScoreAtTargetAtom = atom<number | null>((get) => {
 
 // Action atoms for triggering computations
 export const computeExpectedScoreAtom = atom(null, async (get, set) => {
-  const gaussianStddev = get(gaussianStddevAtom);
+  const gaussianStddevMm = get(gaussianStddevMmAtom);
+  const gaussianStddev = getGaussianStddevPixels(gaussianStddevMm, EXPECTED_SCORE_CANVAS_SIZE);
 
   const updateState = (updates: Partial<ExpectedScoreState>) => {
     set(expectedScoreStateAtom, (prev) => ({ ...prev, ...updates }));
@@ -51,7 +45,8 @@ export const computeExpectedScoreAtom = atom(null, async (get, set) => {
 });
 
 export const debouncedComputeExpectedScoreAtom = atom(null, (get, set) => {
-  const gaussianStddev = get(gaussianStddevAtom);
+  const gaussianStddevMm = get(gaussianStddevMmAtom);
+  const gaussianStddev = getGaussianStddevPixels(gaussianStddevMm, EXPECTED_SCORE_CANVAS_SIZE);
   const isUserInteracting = get(isUserInteractingAtom);
 
   const updateState = (updates: Partial<ExpectedScoreState>) => {
