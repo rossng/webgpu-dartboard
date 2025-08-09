@@ -97,19 +97,19 @@ export const ExpectedScore: React.FC<ExpectedScoreProps> = () => {
   );
 
   return (
-    <div style={{ display: "flex" }}>
-      <div style={{ flex: 1 }}>
-        <p>
+    <div className="flex">
+      <div className="flex-1">
+        <p className="mb-4 text-gray-700">
           The best place to aim isn't always the highest-scoring spot. Sometimes it's better to aim
           a cluster of medium-high scoring spots.
         </p>
-        <p>
+        <p className="mb-6 text-gray-700">
           This map shows your expected score for every single aiming spot on the board. The red dot
           shows the best location to aim.
         </p>
         {state && (
-          <div style={{ display: "flex", alignItems: "center" }}>
-            <div style={{ position: "relative", display: "inline-block" }}>
+          <div className="flex items-center">
+            <div className="relative inline-block">
               {state.isComputing && <LoadingSpinner />}
               <CanvasVisualization
                 id="expected-score"
@@ -134,37 +134,17 @@ export const ExpectedScore: React.FC<ExpectedScoreProps> = () => {
               height={EXPECTED_SCORE_CANVAS_SIZE}
               min={state.expectedScoreRange.min}
               max={state.expectedScoreRange.max}
-              style={{ marginLeft: "20px" }}
+              className="ml-5"
             />
             {expectedScoreAtTarget !== null && (
               <div
-                style={{
-                  marginLeft: "40px",
-                  minWidth: "120px",
-                  display: "flex",
-                  flexDirection: "column",
-                  justifyContent: "center",
-                  alignItems: "start",
-                  height: EXPECTED_SCORE_CANVAS_SIZE,
-                }}
+                className="ml-10 min-w-[120px] flex flex-col justify-center items-start"
+                style={{ height: EXPECTED_SCORE_CANVAS_SIZE }}
               >
-                <div
-                  style={{
-                    fontSize: "12px",
-                    color: "#666",
-                    marginBottom: "4px",
-                    textAlign: "left",
-                  }}
-                >
+                <div className="text-xs text-gray-600 mb-1 text-left">
                   Expected Score
                 </div>
-                <div
-                  style={{
-                    fontSize: "24px",
-                    fontWeight: "bold",
-                    textAlign: "left",
-                  }}
-                >
+                <div className="text-2xl font-bold text-left">
                   {expectedScoreAtTarget.toFixed(2)}
                 </div>
               </div>
@@ -174,16 +154,8 @@ export const ExpectedScore: React.FC<ExpectedScoreProps> = () => {
       </div>
 
       {/* Options sidebar */}
-      <div
-        style={{
-          width: "300px",
-          padding: "20px",
-          backgroundColor: "#f8f8f8",
-          borderLeft: "1px solid #ddd",
-          overflow: "auto",
-        }}
-      >
-        <h3>Options</h3>
+      <div className="sidebar-section">
+        <h3 className="text-lg font-semibold mb-4">Options</h3>
 
         <GaussianDistributionControls
           gaussianStddevPixels={gaussianStddev}

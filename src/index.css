@@ -1,0 +1,41 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Base styles */
+@layer base {
+  body {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+  
+  * {
+    box-sizing: inherit;
+  }
+}
+
+/* Animations */
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Custom component styles */
+@layer components {
+  .tab-button {
+    @apply px-5 py-2.5 mr-2.5 mb-2.5 rounded cursor-pointer text-base transition-colors;
+  }
+  
+  .tab-button-active {
+    @apply bg-blue-600 text-white;
+  }
+  
+  .tab-button-inactive {
+    @apply bg-gray-100 text-black hover:bg-gray-200;
+  }
+  
+  .sidebar-section {
+    @apply w-sidebar p-5 bg-gray-50 border-l border-gray-300 overflow-auto;
+  }
+}

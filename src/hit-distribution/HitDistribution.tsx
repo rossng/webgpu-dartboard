@@ -179,20 +179,20 @@ export const HitDistribution: React.FC<HitDistributionProps> = () => {
   }, [showDartboardColors, targetPosition, gaussianStddevPixels, isDragging]);
 
   return (
-    <div style={{ display: "flex", gap: "10px" }}>
-      <div style={{ flex: 1 }}>
-        <p>
+    <div className="flex gap-2.5">
+      <div className="flex-1">
+        <p className="mb-4 text-gray-700">
           The problem with darts is that you never hit exactly where you aim. (Well, I certainly
           don't.)
         </p>
 
-        <p>
+        <p className="mb-6 text-gray-700">
           Drag the crosshairs around to see where your darts might land. I've assumed that the
           spread can be modelled as a 2D Gaussian distribution.
         </p>
 
         {isReady && (
-          <div style={{ position: "relative", display: "inline-block" }}>
+          <div className="relative inline-block">
             <CanvasVisualization
               key={canvasKey}
               id="hit-distribution"
@@ -212,38 +212,19 @@ export const HitDistribution: React.FC<HitDistributionProps> = () => {
         )}
 
         {segmentProbabilities.length > 0 && (
-          <div style={{ marginTop: "20px" }}>
-            <h3>Hit Probabilities by Segment</h3>
-            <div
-              style={{
-                maxHeight: "400px",
-                overflowY: "auto",
-                border: "1px solid #ddd",
-                borderRadius: "4px",
-              }}
-            >
-              <table
-                style={{
-                  width: "100%",
-                  borderCollapse: "collapse",
-                  fontSize: "14px",
-                }}
-              >
+          <div className="mt-5">
+            <h3 className="text-lg font-semibold mb-4">Hit Probabilities by Segment</h3>
+            <div className="max-h-table overflow-y-auto border border-gray-300 rounded">
+              <table className="w-full border-collapse text-sm">
                 <thead>
-                  <tr style={{ backgroundColor: "#f5f5f5", position: "sticky", top: 0 }}>
-                    <th
-                      style={{ padding: "8px", textAlign: "left", borderBottom: "1px solid #ddd" }}
-                    >
+                  <tr className="bg-gray-100 sticky top-0">
+                    <th className="p-2 text-left border-b border-gray-300">
                       Segment
                     </th>
-                    <th
-                      style={{ padding: "8px", textAlign: "right", borderBottom: "1px solid #ddd" }}
-                    >
+                    <th className="p-2 text-right border-b border-gray-300">
                       Probability
                     </th>
-                    <th
-                      style={{ padding: "8px", textAlign: "right", borderBottom: "1px solid #ddd" }}
-                    >
+                    <th className="p-2 text-right border-b border-gray-300">
                       %
                     </th>
                   </tr>
@@ -252,18 +233,15 @@ export const HitDistribution: React.FC<HitDistributionProps> = () => {
                   {segmentProbabilities.map((seg, index) => (
                     <tr
                       key={`${seg.segment}-${index}`}
-                      style={{
-                        backgroundColor: index % 2 === 0 ? "white" : "#f9f9f9",
-                        borderBottom: "1px solid #eee",
-                      }}
+                      className={`${
+                        index % 2 === 0 ? "bg-white" : "bg-gray-50"
+                      } border-b border-gray-200`}
                     >
-                      <td style={{ padding: "6px 8px" }}>{seg.segment}</td>
-                      <td
-                        style={{ padding: "6px 8px", textAlign: "right", fontFamily: "monospace" }}
-                      >
+                      <td className="px-2 py-1.5">{seg.segment}</td>
+                      <td className="px-2 py-1.5 text-right font-mono">
                         {seg.probability.toFixed(6)}
                       </td>
-                      <td style={{ padding: "6px 8px", textAlign: "right" }}>
+                      <td className="px-2 py-1.5 text-right">
                         {(seg.probability * 100).toFixed(2)}%
                       </td>
                     </tr>
@@ -276,28 +254,20 @@ export const HitDistribution: React.FC<HitDistributionProps> = () => {
       </div>
 
       {/* Options sidebar */}
-      <div
-        style={{
-          width: "300px",
-          padding: "20px",
-          backgroundColor: "#f8f8f8",
-          borderLeft: "1px solid #ddd",
-          overflow: "auto",
-        }}
-      >
-        <h3>Options</h3>
+      <div className="sidebar-section">
+        <h3 className="text-lg font-semibold mb-4">Options</h3>
 
-        <div style={{ marginTop: "20px" }}>
-          <label style={{ display: "flex", alignItems: "center", cursor: "pointer" }}>
+        <div className="mt-5">
+          <label className="flex items-center cursor-pointer">
             <input
               type="checkbox"
               checked={showDartboardColors}
               onChange={(e) => setShowDartboardColors(e.target.checked)}
-              style={{ marginRight: "8px" }}
+              className="mr-2"
             />
             Show Dartboard Colors
           </label>
-          <p style={{ fontSize: "14px", color: "#666", marginTop: "8px" }}>
+          <p className="text-sm text-gray-600 mt-2">
             Use traditional dartboard colors.
           </p>
         </div>

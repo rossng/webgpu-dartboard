@@ -275,20 +275,20 @@ export const ScoreDistribution: React.FC<ScoreDistributionProps> = () => {
   }, [showDartboardColors, targetPosition, gaussianStddevPixels, isDragging]);
 
   return (
-    <div style={{ display: "flex", gap: "10px" }}>
-      <div style={{ flex: 1 }}>
-        <p>
+    <div className="flex gap-2.5">
+      <div className="flex-1">
+        <p className="mb-4 text-gray-700">
           It's not enough to just know where the dart might land. We need to combine that with
           information about the score at each of those locations.
         </p>
-        <p>
+        <p className="mb-6 text-gray-700">
           The expected score is effectively the product of the score at each location and the
           probability of that score. Try moving the crosshairs around and see how some locations
           have a better or worse expected score than others.
         </p>
 
         {isReady && (
-          <div style={{ position: "relative", display: "inline-block" }}>
+          <div className="relative inline-block">
             <CanvasVisualization
               key={canvasKey}
               id="score-distribution"
@@ -305,36 +305,9 @@ export const ScoreDistribution: React.FC<ScoreDistributionProps> = () => {
               canvasHeight={width}
             />
             {segmentProbabilities.length > 0 && (
-              <div
-                style={{
-                  position: "absolute",
-                  right: "-220px",
-                  top: "50%",
-                  transform: "translateY(-50%)",
-                  minWidth: "180px",
-                  display: "flex",
-                  flexDirection: "column",
-                  justifyContent: "center",
-                }}
-              >
-                <div
-                  style={{
-                    fontSize: "12px",
-                    color: "#666",
-                    marginBottom: "4px",
-                    textAlign: "left",
-                  }}
-                >
-                  Expected Score
-                </div>
-                <div
-                  style={{
-                    fontSize: "24px",
-                    fontWeight: "bold",
-                    textAlign: "left",
-                    marginBottom: "16px",
-                  }}
-                >
+              <div className="absolute -right-[220px] top-1/2 -translate-y-1/2 min-w-[180px] flex flex-col justify-center">
+                <div className="text-xs text-gray-600 mb-1 text-left">Expected Score</div>
+                <div className="text-2xl font-bold text-left mb-4">
                   {segmentProbabilities
                     .reduce((sum, seg) => sum + seg.score * seg.probability, 0)
                     .toFixed(2)}
@@ -345,66 +318,32 @@ export const ScoreDistribution: React.FC<ScoreDistributionProps> = () => {
         )}
 
         {segmentProbabilities.length > 0 && (
-          <div style={{ marginTop: "20px" }}>
-            <h3>Score Probabilities by Segment</h3>
-            <div
-              style={{
-                maxHeight: "400px",
-                overflowY: "auto",
-                border: "1px solid #ddd",
-                borderRadius: "4px",
-              }}
-            >
-              <table
-                style={{
-                  width: "100%",
-                  borderCollapse: "collapse",
-                  fontSize: "14px",
-                }}
-              >
+          <div className="mt-5">
+            <h3 className="text-lg font-semibold mb-4">Score Probabilities by Segment</h3>
+            <div className="max-h-table overflow-y-auto border border-gray-300 rounded">
+              <table className="w-full border-collapse text-sm">
                 <thead>
-                  <tr style={{ backgroundColor: "#f5f5f5", position: "sticky", top: 0 }}>
-                    <th
-                      style={{ padding: "8px", textAlign: "left", borderBottom: "1px solid #ddd" }}
-                    >
-                      Segment
-                    </th>
-                    <th
-                      style={{ padding: "8px", textAlign: "right", borderBottom: "1px solid #ddd" }}
-                    >
-                      Score
-                    </th>
-                    <th
-                      style={{ padding: "8px", textAlign: "right", borderBottom: "1px solid #ddd" }}
-                    >
-                      Probability
-                    </th>
-                    <th
-                      style={{ padding: "8px", textAlign: "right", borderBottom: "1px solid #ddd" }}
-                    >
-                      %
-                    </th>
+                  <tr className="bg-gray-100 sticky top-0">
+                    <th className="p-2 text-left border-b border-gray-300">Segment</th>
+                    <th className="p-2 text-right border-b border-gray-300">Score</th>
+                    <th className="p-2 text-right border-b border-gray-300">Probability</th>
+                    <th className="p-2 text-right border-b border-gray-300">%</th>
                   </tr>
                 </thead>
                 <tbody>
                   {segmentProbabilities.map((seg, index) => (
                     <tr
                       key={`${seg.segment}-${index}`}
-                      style={{
-                        backgroundColor: index % 2 === 0 ? "white" : "#f9f9f9",
-                        borderBottom: "1px solid #eee",
-                      }}
+                      className={`${
+                        index % 2 === 0 ? "bg-white" : "bg-gray-50"
+                      } border-b border-gray-200`}
                     >
-                      <td style={{ padding: "6px 8px" }}>{seg.segment}</td>
-                      <td style={{ padding: "6px 8px", textAlign: "right", fontWeight: "bold" }}>
-                        {seg.score}
-                      </td>
-                      <td
-                        style={{ padding: "6px 8px", textAlign: "right", fontFamily: "monospace" }}
-                      >
+                      <td className="px-2 py-1.5">{seg.segment}</td>
+                      <td className="px-2 py-1.5 text-right font-bold">{seg.score}</td>
+                      <td className="px-2 py-1.5 text-right font-mono">
                         {seg.probability.toFixed(6)}
                       </td>
-                      <td style={{ padding: "6px 8px", textAlign: "right" }}>
+                      <td className="px-2 py-1.5 text-right">
                         {(seg.probability * 100).toFixed(2)}%
                       </td>
                     </tr>
@@ -412,48 +351,25 @@ export const ScoreDistribution: React.FC<ScoreDistributionProps> = () => {
                 </tbody>
               </table>
             </div>
-            <div
-              style={{
-                marginTop: "10px",
-                fontSize: "12px",
-                color: "#666",
-                textAlign: "center",
-              }}
-            >
-              <div>
-                Total Probability:{" "}
-                {segmentProbabilities.reduce((sum, seg) => sum + seg.probability, 0).toFixed(2)}
-              </div>
-            </div>
           </div>
         )}
       </div>
 
       {/* Options sidebar */}
-      <div
-        style={{
-          width: "300px",
-          padding: "20px",
-          backgroundColor: "#f8f8f8",
-          borderLeft: "1px solid #ddd",
-          overflow: "auto",
-        }}
-      >
-        <h3>Options</h3>
+      <div className="sidebar-section">
+        <h3 className="text-lg font-semibold mb-4">Options</h3>
 
-        <div style={{ marginTop: "20px" }}>
-          <label style={{ display: "flex", alignItems: "center", cursor: "pointer" }}>
+        <div className="mt-5">
+          <label className="flex items-center cursor-pointer">
             <input
               type="checkbox"
               checked={showDartboardColors}
               onChange={(e) => setShowDartboardColors(e.target.checked)}
-              style={{ marginRight: "8px" }}
+              className="mr-2"
             />
             Show Dartboard Colors
           </label>
-          <p style={{ fontSize: "14px", color: "#666", marginTop: "8px" }}>
-            Use traditional dartboard colors.
-          </p>
+          <p className="text-sm text-gray-600 mt-2">Use traditional dartboard colors.</p>
         </div>
 
         <GaussianDistributionControls

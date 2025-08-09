@@ -45,22 +45,22 @@ export const Dartboard: React.FC = () => {
 
   return (
     <div>
-      <p>
+      <p className="mb-6 text-gray-700">
         Let's start with the basics. This is a standard dartboard. Each section is worth different
         points. Purple means low scores, yellow means jackpot.
       </p>
-      <div style={{ display: "flex", alignItems: "flex-start", gap: "20px" }}>
+      <div className="flex items-start gap-5">
         <CanvasVisualization
           id="dartboard"
           width={WIDTH}
           height={WIDTH}
           onCanvasReady={handleCanvasReady}
         />
-        <ViridisColorScale height={WIDTH} min={0} max={60} style={{ marginTop: "0" }} />
+        <ViridisColorScale height={WIDTH} min={0} max={60} className="mt-0" />
       </div>
 
-      <div style={{ marginTop: "40px" }}>
-        <p>Here you can browse the scoring areas by name.</p>
+      <div className="mt-10">
+        <p className="mb-4 text-gray-700">Here you can browse the scoring areas by name.</p>
         <ScoreAreas />
       </div>
     </div>

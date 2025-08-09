@@ -7,6 +7,7 @@ interface ViridisColorScaleProps {
   min: number;
   max: number;
   style?: React.CSSProperties;
+  className?: string;
   labelStyle?: React.CSSProperties;
 }
 
@@ -16,6 +17,7 @@ export const ViridisColorScale: React.FC<ViridisColorScaleProps> = ({
   min,
   max,
   style = {},
+  className = "",
   labelStyle = {},
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -50,41 +52,28 @@ export const ViridisColorScale: React.FC<ViridisColorScaleProps> = ({
 
   return (
     <div
-      style={{
-        display: "flex",
-        alignItems: "center",
-        position: "relative",
-        maxHeight: '90vh',
-        height: 'auto',
-        ...style,
-      }}
+      className={`flex items-center relative max-h-[90vh] h-auto ${className}`}
+      style={style}
     >
       <canvas
         ref={canvasRef}
         width={width}
         height={height}
-        style={{ 
-          border: "1px solid #ddd",
-          maxHeight: '90vh',
-          width: 'auto',
-          height: 'auto'
-        }}
+        className="border border-gray-300 max-h-[90vh] w-auto h-auto"
       />
       <div
+        className="absolute top-0"
         style={{
-          position: "absolute",
           left: width + 10,
-          top: 0,
           ...defaultLabelStyle,
         }}
       >
         {max.toFixed(1)}
       </div>
       <div
+        className="absolute bottom-0"
         style={{
-          position: "absolute",
           left: width + 10,
-          bottom: 0,
           ...defaultLabelStyle,
         }}
       >

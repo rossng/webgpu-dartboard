@@ -126,16 +126,16 @@ export const OptimalTarget: React.FC<OptimalTargetProps> = ({ defaultCanvasSize 
   }, [currentOptimalPosition, canvasSize]);
 
   return (
-    <div style={{ display: "flex" }}>
-      <div style={{ flex: 1 }}>
-        <p>Now it's time to explore what happens as you get better (or worse) at throwing darts.</p>
-        <p>
+    <div className="flex">
+      <div className="flex-1">
+        <p className="mb-4 text-gray-700">Now it's time to explore what happens as you get better (or worse) at throwing darts.</p>
+        <p className="mb-6 text-gray-700">
           Drag the slider to change the standard deviation and watch how the optimal target position
           slides around the dartboard.
         </p>
 
-        <div style={{ display: "flex", alignItems: "center" }}>
-          <div style={{ position: "relative", display: "inline-block" }}>
+        <div className="flex items-center">
+          <div className="relative inline-block">
             {state.isComputing && <LoadingSpinner />}
             <CanvasVisualization
               id="optimal-target"
@@ -146,21 +146,12 @@ export const OptimalTarget: React.FC<OptimalTargetProps> = ({ defaultCanvasSize 
           </div>
 
           {optimalPositionMm && (
-            <div
-              style={{
-                marginLeft: "40px",
-                minWidth: "150px",
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "start",
-                justifyContent: "center",
-                height: 500,
-              }}
+            <div className="ml-10 min-w-[150px] flex flex-col items-start justify-center h-[500px]"
             >
-              <div style={{ fontSize: "12px", color: "#666", marginBottom: "8px" }}>
+              <div className="text-xs text-gray-600 mb-2">
                 Distance from center
               </div>
-              <div style={{ fontSize: "24px", fontWeight: "bold" }}>
+              <div className="text-2xl font-bold">
                 <div>X: {optimalPositionMm.x.toFixed(1)} mm</div>
                 <div>Y: {optimalPositionMm.y.toFixed(1)} mm</div>
               </div>
@@ -169,26 +160,19 @@ export const OptimalTarget: React.FC<OptimalTargetProps> = ({ defaultCanvasSize 
         </div>
 
         {state.isComputing && (
-          <div style={{ marginTop: "20px" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-              <div style={{ fontSize: "16px" }}>Computing optimal targets...</div>
+          <div className="mt-5">
+            <div className="flex items-center gap-2.5">
+              <div className="text-base">Computing optimal targets...</div>
             </div>
-            <p style={{ fontSize: "14px", color: "#666" }}>
+            <p className="text-sm text-gray-600">
               {state.results.length > 0 && `Progress: ${state.results.length} positions computed`}
             </p>
           </div>
         )}
 
         {!state.isComputing && !state.isInitialized && (
-          <div
-            style={{
-              marginTop: "20px",
-              padding: "10px",
-              backgroundColor: "#e8f4f8",
-              borderRadius: "4px",
-            }}
-          >
-            <p style={{ margin: 0, fontSize: "14px" }}>
+          <div className="mt-5 p-2.5 bg-blue-50 rounded">
+            <p className="m-0 text-sm">
               Initializing WebGPU and computing optimal target positions...
             </p>
           </div>
@@ -196,48 +180,34 @@ export const OptimalTarget: React.FC<OptimalTargetProps> = ({ defaultCanvasSize 
       </div>
 
       {/* Options sidebar */}
-      <div
-        style={{
-          width: "300px",
-          padding: "20px",
-          backgroundColor: "#f8f8f8",
-          borderLeft: "1px solid #ddd",
-          overflow: "auto",
-        }}
-      >
-        <h3>Options</h3>
+      <div className="sidebar-section">
+        <h3 className="text-lg font-semibold mb-4">Options</h3>
 
         {/* Show Dartboard Colors Toggle */}
-        <div style={{ marginTop: "20px" }}>
-          <label style={{ display: "flex", alignItems: "center", cursor: "pointer" }}>
+        <div className="mt-5">
+          <label className="flex items-center cursor-pointer">
             <input
               type="checkbox"
               checked={showDartboardColors}
               onChange={(e) => setShowDartboardColors(e.target.checked)}
-              style={{ marginRight: "8px" }}
+              className="mr-2"
             />
             Show Dartboard Colors
           </label>
-          <p style={{ fontSize: "14px", color: "#666", marginTop: "8px" }}>
+          <p className="text-sm text-gray-600 mt-2">
             Use traditional dartboard colors.
           </p>
         </div>
 
         {/* Computation Resolution Control */}
-        <div style={{ marginTop: "20px" }}>
-          <label style={{ display: "block", marginBottom: "5px", fontWeight: "bold" }}>
+        <div className="mt-5">
+          <label className="block mb-1.5 font-bold">
             Resolution
           </label>
           <select
             value={canvasSize}
             onChange={(e) => setCanvasSize(Number(e.target.value))}
-            style={{
-              width: "100%",
-              padding: "5px",
-              fontSize: "14px",
-              borderRadius: "4px",
-              border: "1px solid #ddd",
-            }}
+            className="w-full p-1.5 text-sm rounded border border-gray-300 disabled:opacity-50"
             disabled={state.isComputing}
           >
             <option value={100}>100x100 (Fast)</option>
@@ -246,14 +216,14 @@ export const OptimalTarget: React.FC<OptimalTargetProps> = ({ defaultCanvasSize 
             <option value={300}>300x300 (High)</option>
             <option value={500}>500x500 (Very High)</option>
           </select>
-          <p style={{ fontSize: "14px", color: "#666", marginTop: "8px" }}>
+          <p className="text-sm text-gray-600 mt-2">
             Higher resolution provides more accurate computation but takes longer to process.
           </p>
         </div>
 
         {/* Sigma Control */}
-        <div style={{ marginTop: "20px" }}>
-          <label style={{ display: "block", marginBottom: "8px", fontWeight: "bold" }}>
+        <div className="mt-5">
+          <label className="block mb-2 font-bold">
             Standard Deviation (σ): {currentSigmaMm.toFixed(1)} mm
           </label>
           <input
@@ -263,29 +233,14 @@ export const OptimalTarget: React.FC<OptimalTargetProps> = ({ defaultCanvasSize 
             step="1"
             value={currentSigmaMm}
             onChange={handleSigmaChange}
-            style={{
-              width: "100%",
-              height: "8px",
-              borderRadius: "4px",
-              background: "#ddd",
-              outline: "none",
-              cursor: "pointer",
-            }}
+            className="w-full h-2 rounded bg-gray-300 outline-none cursor-pointer disabled:opacity-50"
             disabled={state.isComputing || !state.isInitialized}
           />
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              fontSize: "12px",
-              color: "#666",
-              marginTop: "4px",
-            }}
-          >
+          <div className="flex justify-between text-xs text-gray-600 mt-1">
             <span>1</span>
             <span>100</span>
           </div>
-          <p style={{ fontSize: "14px", color: "#666", marginTop: "8px" }}>
+          <p className="text-sm text-gray-600 mt-2">
             Controls the spread of the throws. Higher values represent less accurate throwing.
           </p>
         </div>
