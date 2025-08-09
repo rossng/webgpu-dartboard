@@ -32,10 +32,10 @@ export const CanvasVisualization: React.FC<CanvasVisualizationProps> = ({
 
   const canvasStyle = { 
     imageRendering: 'pixelated' as const,
-    maxHeight: maxDisplayHeight,
-    maxWidth: maxDisplayWidth,
-    width: 'auto',
-    height: 'auto'
+    height: maxDisplayHeight,
+    width: aspectRatio === 1 ? maxDisplayHeight : `calc(${maxDisplayHeight} * ${aspectRatio})`,
+    display: 'block',
+    margin: 0
   };
 
   if (!showOverlay) {

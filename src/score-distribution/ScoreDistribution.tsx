@@ -277,40 +277,44 @@ export const ScoreDistribution: React.FC<ScoreDistributionProps> = () => {
   return (
     <div style={{ display: "flex", gap: "10px" }}>
       <div style={{ flex: 1 }}>
-        <h2>Score Distribution</h2>
         <p>
-          Shows the score-weighted probability distribution (probability × score at each position).
-          Brighter areas contribute more to the expected score.
+          It's not enough to just know where the dart might land. We need to combine that with
+          information about the score at each of those locations.
+        </p>
+        <p>
+          The expected score is effectively the product of the score at each location and the
+          probability of that score. Try moving the crosshairs around and see how some locations
+          have a better or worse expected score than others.
         </p>
 
         {isReady && (
-          <div style={{ display: "flex", alignItems: "center" }}>
-            <div style={{ position: "relative", display: "inline-block" }}>
-              <CanvasVisualization
-                key={canvasKey}
-                id="score-distribution"
-                width={width}
-                height={width}
-                onCanvasReady={runScoreDistribution}
-              />
-              <TargetIndicator
-                targetPosition={targetPosition}
-                onTargetPositionChange={setTargetPosition}
-                onDragStart={() => setIsDragging(true)}
-                onDragEnd={() => setIsDragging(false)}
-                canvasWidth={width}
-                canvasHeight={width}
-              />
-            </div>
+          <div style={{ position: "relative", display: "inline-block" }}>
+            <CanvasVisualization
+              key={canvasKey}
+              id="score-distribution"
+              width={width}
+              height={width}
+              onCanvasReady={runScoreDistribution}
+            />
+            <TargetIndicator
+              targetPosition={targetPosition}
+              onTargetPositionChange={setTargetPosition}
+              onDragStart={() => setIsDragging(true)}
+              onDragEnd={() => setIsDragging(false)}
+              canvasWidth={width}
+              canvasHeight={width}
+            />
             {segmentProbabilities.length > 0 && (
               <div
                 style={{
-                  marginLeft: "40px",
+                  position: "absolute",
+                  right: "-220px",
+                  top: "50%",
+                  transform: "translateY(-50%)",
                   minWidth: "180px",
                   display: "flex",
                   flexDirection: "column",
                   justifyContent: "center",
-                  height: width,
                 }}
               >
                 <div

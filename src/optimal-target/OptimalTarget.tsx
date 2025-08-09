@@ -128,11 +128,10 @@ export const OptimalTarget: React.FC<OptimalTargetProps> = ({ defaultCanvasSize 
   return (
     <div style={{ display: "flex" }}>
       <div style={{ flex: 1 }}>
-        <h2>Optimal Target Position</h2>
+        <p>Now it's time to explore what happens as you get better (or worse) at throwing darts.</p>
         <p>
-          Shows the optimal aiming position for different Gaussian distribution standard deviations
-          (sigma). Use the slider to change the sigma value and see how the optimal target position
-          changes.
+          Drag the slider to change the standard deviation and watch how the optimal target position
+          slides around the dartboard.
         </p>
 
         <div style={{ display: "flex", alignItems: "center" }}>

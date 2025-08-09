@@ -99,11 +99,13 @@ export const ExpectedScore: React.FC<ExpectedScoreProps> = () => {
   return (
     <div style={{ display: "flex" }}>
       <div style={{ flex: 1 }}>
-        <h2>Expected Score</h2>
         <p>
-          The expected score when aiming at each position on the dartboard, calculated by summing
-          probability-weighted scores across all possible hit locations. Brighter areas indicate
-          higher expected scores, showing optimal aiming points.
+          The best place to aim isn't always the highest-scoring spot. Sometimes it's better to aim
+          a cluster of medium-high scoring spots.
+        </p>
+        <p>
+          This map shows your expected score for every single aiming spot on the board. The red dot
+          shows the best location to aim.
         </p>
         {state && (
           <div style={{ display: "flex", alignItems: "center" }}>
@@ -138,15 +140,33 @@ export const ExpectedScore: React.FC<ExpectedScoreProps> = () => {
               <div
                 style={{
                   marginLeft: "40px",
-                  fontSize: "24px",
-                  fontWeight: "bold",
                   minWidth: "120px",
                   display: "flex",
-                  alignItems: "center",
+                  flexDirection: "column",
+                  justifyContent: "center",
+                  alignItems: "start",
                   height: EXPECTED_SCORE_CANVAS_SIZE,
                 }}
               >
-                {expectedScoreAtTarget.toFixed(2)}
+                <div
+                  style={{
+                    fontSize: "12px",
+                    color: "#666",
+                    marginBottom: "4px",
+                    textAlign: "left",
+                  }}
+                >
+                  Expected Score
+                </div>
+                <div
+                  style={{
+                    fontSize: "24px",
+                    fontWeight: "bold",
+                    textAlign: "left",
+                  }}
+                >
+                  {expectedScoreAtTarget.toFixed(2)}
+                </div>
               </div>
             )}
           </div>

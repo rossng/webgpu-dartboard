@@ -181,10 +181,14 @@ export const HitDistribution: React.FC<HitDistributionProps> = () => {
   return (
     <div style={{ display: "flex", gap: "10px" }}>
       <div style={{ flex: 1 }}>
-        <h2>Hit Distribution</h2>
         <p>
-          Shows the probability distribution of where darts will land when aiming at the target
-          location, based on a 2D Gaussian distribution.
+          The problem with darts is that you never hit exactly where you aim. (Well, I certainly
+          don't.)
+        </p>
+
+        <p>
+          Drag the crosshairs around to see where your darts might land. I've assumed that the
+          spread can be modelled as a 2D Gaussian distribution.
         </p>
 
         {isReady && (

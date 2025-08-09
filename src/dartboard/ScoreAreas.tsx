@@ -142,8 +142,11 @@ export const ScoreAreas: React.FC<ScoreAreasProps> = () => {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-      <div style={{ marginBottom: "20px" }}>
-        <label htmlFor="area-select" style={{ marginRight: "10px", fontWeight: "bold" }}>
+      <div>
+        <label
+          htmlFor="area-select"
+          style={{ marginRight: "10px", fontWeight: "bold", display: "none" }}
+        >
           Select Area:
         </label>
         <select

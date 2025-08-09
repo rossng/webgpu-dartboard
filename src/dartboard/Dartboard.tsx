@@ -45,10 +45,9 @@ export const Dartboard: React.FC = () => {
 
   return (
     <div>
-      <h2>Dartboard</h2>
       <p>
-        A visual representation of the dartboard with different scoring regions. Higher scores are
-        shown in brighter yellow/green colors, lower scores in purple/blue.
+        Let's start with the basics. This is a standard dartboard. Each section is worth different
+        points. Purple means low scores, yellow means jackpot.
       </p>
       <div style={{ display: "flex", alignItems: "flex-start", gap: "20px" }}>
         <CanvasVisualization
@@ -61,7 +60,7 @@ export const Dartboard: React.FC = () => {
       </div>
 
       <div style={{ marginTop: "40px" }}>
-        <h2>Explore Scoring Areas</h2>
+        <p>Here you can browse the scoring areas by name.</p>
         <ScoreAreas />
       </div>
     </div>

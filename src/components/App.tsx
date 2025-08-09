@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { Dartboard } from "../dartboard/Dartboard";
 import { ExpectedScore } from "../expected-score/ExpectedScore";
 import { HitDistribution } from "../hit-distribution/HitDistribution";
@@ -19,11 +19,11 @@ interface Tab {
 }
 
 const tabs: Tab[] = [
-  { id: "dartboard", label: "Dartboard", component: Dartboard },
-  { id: "hit-distribution", label: "Hit Distribution", component: HitDistribution },
-  { id: "score-distribution", label: "Score Distribution", component: ScoreDistribution },
-  { id: "expected-score", label: "Expected Score", component: ExpectedScore },
-  { id: "optimal-target", label: "Optimal Target", component: OptimalTarget },
+  { id: "dartboard", label: "1. Dartboard", component: Dartboard },
+  { id: "hit-distribution", label: "2. Hit Distribution", component: HitDistribution },
+  { id: "score-distribution", label: "3. Score Distribution", component: ScoreDistribution },
+  { id: "expected-score", label: "4. Expected Score", component: ExpectedScore },
+  { id: "optimal-target", label: "5. Skill Explorer", component: OptimalTarget },
 ];
 
 export const App: React.FC = () => {
@@ -39,8 +39,15 @@ export const App: React.FC = () => {
   const ActiveComponent = tabs.find((tab) => tab.id === activeTab)?.component || HitDistribution;
 
   return (
-    <div style={{ height: "100vh", fontFamily: "Arial, sans-serif", padding: "20px", overflow: "auto" }}>
-      <h1>WebGPU Dartboard</h1>
+    <div
+      style={{
+        height: "100vh",
+        fontFamily: "Arial, sans-serif",
+        padding: "20px",
+        overflow: "auto",
+      }}
+    >
+      <h1>Where should I aim?</h1>
 
       <div style={{ marginBottom: "20px" }}>
         {tabs.map((tab) => (
